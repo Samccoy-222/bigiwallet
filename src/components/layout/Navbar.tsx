@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Menu, Bell, Copy, LogOut, ExternalLink } from 'lucide-react';
-import Button from '../ui/Button';
-import { useWalletStore } from '../../store/walletStore';
-import { formatAddress } from '../../utils/formatters';
+import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Menu, Bell, Copy, LogOut, ExternalLink } from "lucide-react";
+import Button from "../ui/Button";
+import { useWalletStore } from "../../store/walletStore";
+import { formatAddress } from "../../utils/formatters";
 
 const Navbar: React.FC = () => {
   const location = useLocation();
@@ -14,18 +14,20 @@ const Navbar: React.FC = () => {
 
   const getPageTitle = () => {
     switch (location.pathname) {
-      case '/':
-        return 'Dashboard';
-      case '/send-receive':
-        return 'Send & Receive';
-      case '/transactions':
-        return 'Transactions';
-      case '/markets':
-        return 'Markets';
-      case '/settings':
-        return 'Settings';
+      case "/":
+        return "Dashboard";
+      case "/send-receive/send":
+        return "Send & Receive";
+      case "/transactions":
+        return "Transactions";
+      case "/markets":
+        return "Markets";
+      case "/settings":
+        return "Settings";
+      case "/swap":
+        return "Swap";
       default:
-        return 'Dashboard';
+        return "Dashboard";
     }
   };
 
@@ -57,8 +59,10 @@ const Navbar: React.FC = () => {
             {/* Wallet Address */}
             <div className="hidden md:flex items-center bg-neutral-800 rounded-full px-3 py-1.5">
               <div className="h-2 w-2 rounded-full bg-success mr-2"></div>
-              <span className="text-sm text-neutral-300">{formatAddress(address)}</span>
-              <button 
+              <span className="text-sm text-neutral-300">
+                {formatAddress(address)}
+              </span>
+              <button
                 className="ml-2 text-neutral-400 hover:text-white"
                 onClick={copyAddress}
               >
@@ -80,11 +84,7 @@ const Navbar: React.FC = () => {
             </Button>
 
             {/* Lock Wallet Button */}
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => lockWallet()}
-            >
+            <Button variant="outline" size="sm" onClick={() => lockWallet()}>
               <LogOut size={16} className="mr-1" />
               <span className="hidden sm:inline">Lock</span>
             </Button>
@@ -96,56 +96,91 @@ const Navbar: React.FC = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-background-light border-t border-neutral-800">
           <nav className="flex flex-col p-4 space-y-4">
-            <a 
-              className={`p-2 rounded-lg ${location.pathname === '/' ? 'bg-primary/20 text-primary' : 'text-neutral-300'}`}
+            <a
+              className={`p-2 rounded-lg ${
+                location.pathname === "/"
+                  ? "bg-primary/20 text-primary"
+                  : "text-neutral-300"
+              }`}
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                navigate('/');
+                navigate("/");
                 setIsMobileMenuOpen(false);
               }}
             >
               Dashboard
             </a>
-            <a 
-              className={`p-2 rounded-lg ${location.pathname === '/send-receive' ? 'bg-primary/20 text-primary' : 'text-neutral-300'}`}
+            <a
+              className={`p-2 rounded-lg ${
+                location.pathname === "/send-receive"
+                  ? "bg-primary/20 text-primary"
+                  : "text-neutral-300"
+              }`}
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                navigate('/send-receive');
+                navigate("/send-receive");
                 setIsMobileMenuOpen(false);
               }}
             >
               Send & Receive
             </a>
-            <a 
-              className={`p-2 rounded-lg ${location.pathname === '/transactions' ? 'bg-primary/20 text-primary' : 'text-neutral-300'}`}
+            <a
+              className={`p-2 rounded-lg ${
+                location.pathname === "/send-receive"
+                  ? "bg-primary/20 text-primary"
+                  : "text-neutral-300"
+              }`}
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                navigate('/transactions');
+                navigate("/swap");
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              Swap
+            </a>
+            <a
+              className={`p-2 rounded-lg ${
+                location.pathname === "/transactions"
+                  ? "bg-primary/20 text-primary"
+                  : "text-neutral-300"
+              }`}
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/transactions");
                 setIsMobileMenuOpen(false);
               }}
             >
               Transactions
             </a>
-            <a 
-              className={`p-2 rounded-lg ${location.pathname === '/markets' ? 'bg-primary/20 text-primary' : 'text-neutral-300'}`}
+            <a
+              className={`p-2 rounded-lg ${
+                location.pathname === "/markets"
+                  ? "bg-primary/20 text-primary"
+                  : "text-neutral-300"
+              }`}
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                navigate('/markets');
+                navigate("/markets");
                 setIsMobileMenuOpen(false);
               }}
             >
               Markets
             </a>
-            <a 
-              className={`p-2 rounded-lg ${location.pathname === '/settings' ? 'bg-primary/20 text-primary' : 'text-neutral-300'}`}
+            <a
+              className={`p-2 rounded-lg ${
+                location.pathname === "/settings"
+                  ? "bg-primary/20 text-primary"
+                  : "text-neutral-300"
+              }`}
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                navigate('/settings');
+                navigate("/settings");
                 setIsMobileMenuOpen(false);
               }}
             >

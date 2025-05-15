@@ -1,6 +1,13 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { Wallet, Send, History as ListHistory, LineChart, Settings, Repeat } from 'lucide-react';
+import React from "react";
+import { NavLink } from "react-router-dom";
+import {
+  Wallet,
+  Send,
+  History as ListHistory,
+  LineChart,
+  Settings,
+  Repeat,
+} from "lucide-react";
 
 const Sidebar: React.FC = () => {
   return (
@@ -12,19 +19,31 @@ const Sidebar: React.FC = () => {
           <span className="text-xl font-bold gradient-text">BigiWallet</span>
         </div>
       </div>
-      
+
       {/* Navigation */}
       <nav className="flex-1 px-4 py-6 space-y-1">
         <NavItem to="/" icon={<Wallet size={20} />} label="Dashboard" />
-        <NavItem to="/send-receive" icon={<Send size={20} />} label="Send & Receive" />
+        <NavItem
+          to="/send-receive/send"
+          icon={<Send size={20} />}
+          label="Send & Receive"
+        />
         <NavItem to="/swap" icon={<Repeat size={20} />} label="Swap" />
-        <NavItem to="/transactions" icon={<ListHistory size={20} />} label="Transactions" />
+        <NavItem
+          to="/transactions"
+          icon={<ListHistory size={20} />}
+          label="Transactions"
+        />
         <NavItem to="/markets" icon={<LineChart size={20} />} label="Markets" />
       </nav>
-      
+
       {/* Bottom Navigation */}
       <div className="p-4 border-t border-neutral-800">
-        <NavItem to="/settings" icon={<Settings size={20} />} label="Settings" />
+        <NavItem
+          to="/settings"
+          icon={<Settings size={20} />}
+          label="Settings"
+        />
       </div>
     </aside>
   );
@@ -42,9 +61,11 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label }) => {
       to={to}
       className={({ isActive }) => `
         flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200
-        ${isActive 
-          ? 'bg-primary/20 text-primary' 
-          : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}
+        ${
+          isActive
+            ? "bg-primary/20 text-primary"
+            : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+        }
       `}
     >
       {icon}
