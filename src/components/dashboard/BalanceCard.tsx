@@ -27,7 +27,7 @@ const BalanceCard: React.FC = () => {
   };
 
   return (
-    <Card variant="glass" className="w-full animate-fade-in">
+    <Card variant="glass" className="w-full animate-fade-in px-2 sm:px-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium text-neutral-300">Total Balance</h2>
         <div className="flex space-x-2">

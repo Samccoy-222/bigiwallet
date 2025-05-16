@@ -10,11 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@noble/hashes": "^1.8.0",
+    "@scure/bip32": "^1.7.0",
+    "@scure/bip39": "^1.6.0",
     "@supabase/supabase-js": "^2.39.7",
     "@uniswap/sdk-core": "^4.0.10",
     "@uniswap/v3-sdk": "^3.10.2",
     "alchemy-sdk": "^3.1.2",
+    "bip32": "^2.0.6",
     "bip39": "^3.1.0",
+    "bitcoinjs-lib": "^6.1.7",
+    "bs58check": "^4.0.0",
     "buffer": "^6.0.3",
     "clsx": "^2.1.0",
     "ethers": "^6.11.1",
@@ -25,6 +32,7 @@
     "react-router-dom": "^6.22.3",
     "recharts": "^2.12.2",
     "tailwind-merge": "^2.2.1",
+    "tiny-secp256k1": "^2.2.3",
     "zustand": "^4.5.1"
   },
   "devDependencies": {

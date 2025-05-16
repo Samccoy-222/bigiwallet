@@ -57,7 +57,7 @@ const Navbar: React.FC = () => {
           {/* Right Side Navigation */}
           <div className="flex items-center space-x-1 md:space-x-3">
             {/* Wallet Address */}
-            <div className="hidden md:flex items-center bg-neutral-800 rounded-full px-3 py-1.5">
+            <div className="flex items-center bg-neutral-800 rounded-full px-3 py-1.5">
               <div className="h-2 w-2 rounded-full bg-success mr-2"></div>
               <span className="text-sm text-neutral-300">
                 {formatAddress(address)}
@@ -74,14 +74,6 @@ const Navbar: React.FC = () => {
                 </div>
               )}
             </div>
-
-            {/* Notifications */}
-            <Button variant="ghost" size="sm" className="relative">
-              <Bell size={20} />
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-error flex items-center justify-center text-xs">
-                2
-              </span>
-            </Button>
 
             {/* Lock Wallet Button */}
             <Button variant="outline" size="sm" onClick={() => lockWallet()}>

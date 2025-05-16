@@ -1,10 +1,10 @@
 // Format number as currency
 export const formatCurrency = (value: number, digits = 2) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: digits,
-    maximumFractionDigits: digits
+    maximumFractionDigits: digits,
   }).format(value);
 };
 
@@ -28,26 +28,28 @@ export const abbreviateNumber = (num: number): string => {
 };
 
 // Format wallet address to show only first and last few characters
-export const formatAddress = (address: string, start = 6, end = 4): string => {
-  if (!address) return '';
+export const formatAddress = (address: string, start = 4, end = 4): string => {
+  if (!address) return "";
   if (address.length <= start + end) return address;
-  return `${address.substring(0, start)}...${address.substring(address.length - end)}`;
+  return `${address.substring(0, start)}...${address.substring(
+    address.length - end
+  )}`;
 };
 
 // Format date
 export const formatDate = (timestamp: number): string => {
-  return new Date(timestamp).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 };
 
 // Format time
 export const formatTime = (timestamp: number): string => {
-  return new Date(timestamp).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit'
+  return new Date(timestamp).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
@@ -58,6 +60,6 @@ export const formatDateTime = (timestamp: number): string => {
 
 // Format percentage
 export const formatPercentage = (value: number): string => {
-  const sign = value >= 0 ? '+' : '';
+  const sign = value >= 0 ? "+" : "";
   return `${sign}${value.toFixed(2)}%`;
 };

@@ -10,17 +10,20 @@ export interface Token {
 
 export interface Transaction {
   id: string;
-  type: 'send' | 'receive';
+  type: "send" | "receive";
   amount: number;
   token: string;
   timestamp: number;
   address: string;
-  status: 'pending' | 'completed' | 'failed';
+  status: "pending" | "completed" | "failed";
   fee?: number;
   hash?: string;
 }
 
+export type Currency = "USD" | "EUR";
+
 export interface WalletState {
+  currency: Currency;
   tokens: Token[];
   transactions: Transaction[];
   totalBalance: number;
@@ -44,3 +47,5 @@ export interface MarketData {
   priceChange24h: number;
   priceHistory: PriceData[];
 }
+
+export type TimeFrame = "24h" | "7d" | "1m" | "3m" | "1y";
