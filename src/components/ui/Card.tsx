@@ -19,7 +19,8 @@ const Card: React.FC<CardProps> = ({
   onClick,
   ...props
 }) => {
-  const baseStyles = "rounded-xl shadow-card transition-all duration-200";
+  const baseStyles =
+    "rounded-xl shadow-card transition-all duration-200 min-h-[240px]";
 
   const variantStyles = {
     default: "bg-background-light border border-neutral-800",

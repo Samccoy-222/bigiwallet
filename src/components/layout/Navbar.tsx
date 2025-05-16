@@ -4,11 +4,13 @@ import { Menu, Bell, Copy, LogOut, ExternalLink } from "lucide-react";
 import Button from "../ui/Button";
 import { useWalletStore } from "../../store/walletStore";
 import { formatAddress } from "../../utils/formatters";
+import { useAuthStore } from "../../store/authStore";
 
 const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { address, lockWallet } = useWalletStore();
+  const { address } = useWalletStore();
+  const { logout } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAddressTooltip, setShowAddressTooltip] = useState(false);
 
@@ -56,29 +58,10 @@ const Navbar: React.FC = () => {
 
           {/* Right Side Navigation */}
           <div className="flex items-center space-x-1 md:space-x-3">
-            {/* Wallet Address */}
-            <div className="flex items-center bg-neutral-800 rounded-full px-3 py-1.5">
-              <div className="h-2 w-2 rounded-full bg-success mr-2"></div>
-              <span className="text-sm text-neutral-300">
-                {formatAddress(address)}
-              </span>
-              <button
-                className="ml-2 text-neutral-400 hover:text-white"
-                onClick={copyAddress}
-              >
-                <Copy size={14} />
-              </button>
-              {showAddressTooltip && (
-                <div className="absolute mt-16 bg-neutral-800 text-white text-xs px-2 py-1 rounded">
-                  Address copied!
-                </div>
-              )}
-            </div>
-
             {/* Lock Wallet Button */}
-            <Button variant="outline" size="sm" onClick={() => lockWallet()}>
+            <Button variant="outline" size="sm" onClick={() => logout()}>
               <LogOut size={16} className="mr-1" />
-              <span className="hidden sm:inline">Lock</span>
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </div>
