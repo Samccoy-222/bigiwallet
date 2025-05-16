@@ -1,98 +1,46 @@
-import React, { useState } from 'react';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer, 
-  TooltipProps 
-} from 'recharts';
-import Card from '../ui/Card';
-import { mockMarketData } from '../../utils/mockData';
-import { formatCurrency, formatTime } from '../../utils/formatters';
-import { PriceData } from '../../types/wallet';
-
-interface CustomTooltipProps extends TooltipProps<number, string> {
-  active?: boolean;
-  payload?: any[];
-  label?: string;
-}
-
-const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-background p-2 border border-neutral-700 rounded shadow-lg">
-        <p className="text-neutral-300">{formatTime(Number(label))}</p>
-        <p className="text-white font-medium">{formatCurrency(payload[0].value)}</p>
-      </div>
-    );
-  }
-
-  return null;
-};
+import React, { useState } from "react";
+import Card from "../ui/Card";
+import TradingViewWidget from "../common/TradingViewWidget";
+const tokens = [
+  { id: "1", label: "Bitcoin (BTC)", slug: "bitcoin", symbol: "BTCUSDT" },
+  { id: "1027", label: "Ethereum (ETH)", slug: "ethereum", symbol: "ETHUSDT" },
+];
 
 const PriceChart: React.FC = () => {
-  const [selectedToken, setSelectedToken] = useState('bitcoin');
-  const tokenData = mockMarketData.find(token => token.id === selectedToken);
-  
-  if (!tokenData) return null;
-  
+  const [selectedTokenId, setSelectedTokenId] = useState("1");
+  const selectedToken = tokens.find((t) => t.id === selectedTokenId)!;
+
   return (
-    <Card className="w-full h-[300px] animate-slide-up">
+    <Card className="w-full h-[500px] bg-[#1e293b] p-4 md:px-4 px-1 animate-slide-up">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium">Price Chart</h2>
-        <select 
+        <select
           className="input py-1 text-sm"
-          value={selectedToken}
-          onChange={(e) => setSelectedToken(e.target.value)}
+          value={selectedTokenId}
+          onChange={(e) => setSelectedTokenId(e.target.value)}
         >
-          {mockMarketData.map(token => (
+          {tokens.map((token) => (
             <option key={token.id} value={token.id}>
-              {token.name} ({token.symbol})
+              {token.label}
             </option>
           ))}
         </select>
       </div>
 
-      <div className="mb-4">
-        <div className="flex items-baseline gap-2">
-          <h3 className="text-2xl font-bold">{formatCurrency(tokenData.price)}</h3>
-          <div className={tokenData.priceChange24h >= 0 ? 'text-success' : 'text-error'}>
-            {tokenData.priceChange24h >= 0 ? '+' : ''}{tokenData.priceChange24h.toFixed(2)}%
-          </div>
-        </div>
-        <p className="text-xs text-neutral-400">24h Change</p>
+      <div className="mt-2 text-right">
+        <a
+          href={`https://coinmarketcap.com/currencies/${selectedToken.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-blue-500 hover:underline"
+        >
+          View on CoinMarketCap
+        </a>
       </div>
 
-      <ResponsiveContainer width="100%" height={180}>
-        <LineChart data={tokenData.priceHistory}>
-          <XAxis 
-            dataKey="timestamp" 
-            tick={{ fill: '#64748B' }}
-            tickFormatter={(value) => formatTime(value)}
-            axisLine={{ stroke: '#334155' }}
-            tickLine={{ stroke: '#334155' }}
-          />
-          <YAxis 
-            domain={['dataMin', 'dataMax']} 
-            tick={{ fill: '#64748B' }}
-            axisLine={{ stroke: '#334155' }}
-            tickLine={{ stroke: '#334155' }}
-            width={60}
-            tickFormatter={(value) => formatCurrency(value, 0)}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Line 
-            type="monotone" 
-            dataKey="price" 
-            stroke={tokenData.priceChange24h >= 0 ? '#10B981' : '#EF4444'} 
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 6, fill: tokenData.priceChange24h >= 0 ? '#10B981' : '#EF4444' }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <div className="h-[400px]">
+        <TradingViewWidget symbol={selectedToken.symbol} />
+      </div>
     </Card>
   );
 };

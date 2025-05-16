@@ -8,7 +8,7 @@ import { sha256 } from "@noble/hashes/sha256";
 import { ripemd160 } from "@noble/hashes/ripemd160";
 import bs58check from "bs58check";
 
-const supabase = createClient(
+export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
@@ -72,12 +72,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   login: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (error) throw error;
-    set({ user: data.user, isAuthenticated: true });
+
+    const user = authData.user;
+
+    // 🔍 Fetch profile (wallet addresses) from 'profiles' table
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("eth_address, btc_address")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    set({
+      user: {
+        ...user,
+        eth_address: profile.eth_address,
+        btc_address: profile.btc_address,
+      },
+      wallets: {
+        ethereum: { address: profile.eth_address },
+        bitcoin: { address: profile.btc_address },
+      },
+      isAuthenticated: true,
+    });
   },
 
   register: async (email, password) => {

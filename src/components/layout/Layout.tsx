@@ -1,7 +1,7 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import Navbar from './Navbar';
+import React from "react";
+import { Outlet } from "react-router-dom";
+import Sidebar from "./Sidebar";
+import Navbar from "./Navbar";
 
 const Layout: React.FC = () => {
   return (
@@ -10,12 +10,12 @@ const Layout: React.FC = () => {
       <div className="hidden md:flex md:w-64 lg:w-72">
         <Sidebar />
       </div>
-      
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
-        
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+
+        <main className="flex-1 overflow-y-auto p-1 md:p-6">
           <div className="container mx-auto max-w-6xl">
             <Outlet />
           </div>
