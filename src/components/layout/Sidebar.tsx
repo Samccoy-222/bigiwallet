@@ -4,7 +4,6 @@ import {
   Wallet,
   Send,
   History as ListHistory,
-  LineChart,
   Settings,
   Repeat,
 } from "lucide-react";
@@ -34,7 +33,6 @@ const Sidebar: React.FC = () => {
           icon={<ListHistory size={20} />}
           label="Transactions"
         />
-        <NavItem to="/markets" icon={<LineChart size={20} />} label="Markets" />
       </nav>
 
       {/* Bottom Navigation */}

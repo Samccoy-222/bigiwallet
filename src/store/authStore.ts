@@ -7,6 +7,7 @@ import { mnemonicToSeed } from "@scure/bip39";
 import { sha256 } from "@noble/hashes/sha256";
 import { ripemd160 } from "@noble/hashes/ripemd160";
 import bs58check from "bs58check";
+import { persist } from "zustand/middleware";
 
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -58,100 +59,119 @@ export async function generateWallets(mnemonic: string): Promise<Wallets> {
   };
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  isAuthenticated: false,
-  user: null,
-  mnemonic: null,
-  wallets: null,
-  justRegistered: false,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      isAuthenticated: false,
+      user: null,
+      mnemonic: null,
+      wallets: null,
+      justRegistered: false,
 
-  initialize: async () => {
-    const { data } = await supabase.auth.getSession();
-    const user = data.session?.user ?? null;
-    set({ user, isAuthenticated: !!user });
-  },
-
-  login: async (email, password) => {
-    const { data: authData, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-
-    const user = authData.user;
-
-    // 🔍 Fetch profile (wallet addresses) from 'profiles' table
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("eth_address, btc_address")
-      .eq("user_id", user.id)
-      .single();
-
-    if (profileError) throw profileError;
-
-    set({
-      user: {
-        ...user,
-        eth_address: profile.eth_address,
-        btc_address: profile.btc_address,
+      initialize: async () => {
+        const { data } = await supabase.auth.getSession();
+        const user = data.session?.user ?? null;
+        set({ user, isAuthenticated: !!user });
       },
-      wallets: {
-        ethereum: { address: profile.eth_address },
-        bitcoin: { address: profile.btc_address },
+
+      login: async (email, password) => {
+        const { data: authData, error } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+        if (error) throw error;
+
+        const user = authData.user;
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("eth_address, btc_address")
+          .eq("user_id", user.id)
+          .single();
+
+        if (profileError) throw profileError;
+
+        set({
+          user: {
+            ...user,
+            eth_address: profile.eth_address,
+            btc_address: profile.btc_address,
+          },
+          wallets: {
+            ethereum: { address: profile.eth_address },
+            bitcoin: { address: profile.btc_address },
+          },
+          isAuthenticated: true,
+        });
       },
-      isAuthenticated: true,
-    });
-  },
 
-  register: async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
+      register: async (email, password) => {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
 
-    const mnemonic = generateMnemonic();
-    const wallets = await generateWallets(mnemonic);
+        const mnemonic = generateMnemonic();
+        const wallets = await generateWallets(mnemonic);
 
-    const { error: profileError } = await supabase.from("profiles").insert([
-      {
-        user_id: data.user?.id,
-        mnemonic,
-        eth_address: wallets.ethereum.address,
-        btc_address: wallets.bitcoin.address,
+        const { error: profileError } = await supabase.from("profiles").insert([
+          {
+            user_id: data.user?.id,
+            mnemonic,
+            eth_address: wallets.ethereum.address,
+            btc_address: wallets.bitcoin.address,
+          },
+        ]);
+        if (profileError) throw profileError;
+
+        set({
+          user: data.user,
+          isAuthenticated: true,
+          mnemonic,
+          wallets,
+          justRegistered: true,
+        });
       },
-    ]);
-    if (profileError) throw profileError;
 
-    set({
-      user: data.user,
-      isAuthenticated: true,
-      mnemonic,
-      wallets,
-      justRegistered: true,
-    });
-  },
+      logout: async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        set({
+          user: null,
+          isAuthenticated: false,
+          mnemonic: null,
+          wallets: null,
+        });
+      },
 
-  logout: async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    set({ user: null, isAuthenticated: false, mnemonic: null, wallets: null });
-  },
+      createWallet: async () => {
+        const mnemonic = generateMnemonic();
+        const wallets = await generateWallets(mnemonic);
 
-  createWallet: async () => {
-    const mnemonic = generateMnemonic();
-    const wallets = await generateWallets(mnemonic);
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            eth_address: wallets.ethereum.address,
+            btc_address: wallets.bitcoin.address,
+          })
+          .eq("user_id", get().user?.id);
+        if (error) throw error;
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        eth_address: wallets.ethereum.address,
-        btc_address: wallets.bitcoin.address,
-      })
-      .eq("user_id", get().user?.id);
-    if (error) throw error;
+        set({ mnemonic, wallets });
+      },
 
-    set({ mnemonic, wallets });
-  },
-
-  setJustRegistered: async () => {
-    set({ justRegistered: false });
-  },
-}));
+      setJustRegistered: async () => {
+        set({ justRegistered: false });
+      },
+    }),
+    {
+      name: "auth-store", // 🔐 localStorage key
+      partialize: (state) => ({
+        isAuthenticated: state.isAuthenticated,
+        user: state.user,
+        mnemonic: state.mnemonic,
+        wallets: state.wallets,
+        justRegistered: state.justRegistered,
+      }),
+    }
+  )
+);

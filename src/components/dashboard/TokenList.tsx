@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+// components/wallet/TokenList.tsx
+import React, { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../../store/authStore";
 import { Token } from "../../types/wallet";
 import Card from "../ui/Card";
-import TokenRow from "./TokenRow";
+import { fetchUserTokens } from "../../utils/fetchUserTokens";
+import { formatCurrency, formatCrypto } from "../../utils/formatters";
 
 type SortBy = "name" | "quantity" | "value";
 type SortOrder = "asc" | "desc";
@@ -15,130 +16,34 @@ const TokenList: React.FC = () => {
   const [sortBy, setSortBy] = useState<SortBy>("value");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [loading, setLoading] = useState(false);
+  const hasLoaded = useRef(false); // to prevent double fetch
 
   useEffect(() => {
-    const fetchTokens = async () => {
-      if (!wallets?.ethereum?.address || !wallets?.bitcoin?.address) return;
+    if (
+      !wallets?.ethereum?.address ||
+      !wallets?.bitcoin?.address ||
+      hasLoaded.current
+    )
+      return;
+
+    hasLoaded.current = true;
+
+    const load = async () => {
       setLoading(true);
-
       try {
-        const ethAddress = wallets.ethereum.address;
-        const btcAddress = wallets.bitcoin.address;
-        const alchemyUrl = `https://eth-mainnet.g.alchemy.com/v2/${
-          import.meta.env.VITE_ALCHEMY_API_KEY
-        }`;
-
-        // 1. ETH Native Balance
-        const ethBalanceRes = await axios.get(alchemyUrl, {
-          params: {
-            module: "account",
-            action: "balance",
-            address: ethAddress,
-            tag: "latest",
-            apikey: import.meta.env.VITE_ETHERSCAN_API_KEY,
-          },
-        });
-
-        const ethBalance = parseFloat(ethBalanceRes.data.result) / 1e18;
-
-        // 2. BTC Balance
-        const btcRes = await axios.get(
-          `https://blockstream.info/api/address/${btcAddress}`
+        const fetched = await fetchUserTokens(
+          wallets.ethereum.address,
+          wallets.bitcoin.address
         );
-        const btcBalance =
-          btcRes.data.chain_stats.funded_txo_sum / 1e8 -
-          btcRes.data.chain_stats.spent_txo_sum / 1e8;
-
-        // 3. Token Balances
-        const tokenBalRes = await axios.post(alchemyUrl, {
-          jsonrpc: "2.0",
-          id: 1,
-          method: "alchemy_getTokenBalances",
-          params: [ethAddress],
-        });
-
-        const rawTokens = tokenBalRes.data.result.tokenBalances.filter(
-          (t: any) => t.tokenBalance !== "0x0"
-        );
-
-        const tokenDetails: Token[] = await Promise.all(
-          rawTokens.map(async (token: any) => {
-            const metadataRes = await axios.post(alchemyUrl, {
-              jsonrpc: "2.0",
-              id: 1,
-              method: "alchemy_getTokenMetadata",
-              params: [token.contractAddress],
-            });
-
-            const meta = metadataRes.data.result;
-            const decimals = meta.decimals || 18;
-            const balance =
-              parseInt(token.tokenBalance, 16) / Math.pow(10, decimals);
-
-            let price = 0;
-            try {
-              const priceRes = await axios.get(
-                `https://api.coingecko.com/api/v3/simple/token_price/ethereum`,
-                {
-                  params: {
-                    contract_addresses: token.contractAddress,
-                    vs_currencies: "usd",
-                  },
-                }
-              );
-              price =
-                priceRes.data[token.contractAddress.toLowerCase()]?.usd || 0;
-            } catch {
-              price = 0;
-            }
-
-            return {
-              id: token.contractAddress,
-              name: meta.name || "Unknown",
-              symbol: meta.symbol || "",
-              logo: meta.logo || "",
-              balance,
-              price,
-              priceChange24h: 0, // optional if you want to enhance with /coins/{id}
-            };
-          })
-        );
-
-        // 4. ETH + BTC static info
-        const priceRes = await axios.get(
-          `https://api.coingecko.com/api/v3/simple/price?ids=ethereum,bitcoin&vs_currencies=usd`
-        );
-
-        const extraTokens: Token[] = [
-          {
-            id: "eth-native",
-            name: "Ethereum",
-            symbol: "ETH",
-            logo: "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=010",
-            balance: ethBalance,
-            price: priceRes.data.ethereum.usd,
-            priceChange24h: 0,
-          },
-          {
-            id: "btc-native",
-            name: "Bitcoin",
-            symbol: "BTC",
-            logo: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=010",
-            balance: btcBalance,
-            price: priceRes.data.bitcoin.usd,
-            priceChange24h: 0,
-          },
-        ];
-
-        setTokens([...extraTokens, ...tokenDetails]);
+        setTokens(fetched.tokens);
       } catch (err) {
-        console.error("Failed to fetch tokens:", err);
+        console.error("Token fetch failed", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTokens();
+    load();
   }, [wallets?.ethereum?.address, wallets?.bitcoin?.address]);
 
   const handleSort = (field: SortBy) => {
@@ -182,7 +87,7 @@ const TokenList: React.FC = () => {
       </div>
 
       <table className="w-full text-sm text-left">
-        <thead className="border-b text-neutral-500">
+        <thead className=" text-neutral-500">
           <tr>
             <th
               className="cursor-pointer px-3 py-2"
@@ -194,7 +99,7 @@ const TokenList: React.FC = () => {
               className="cursor-pointer px-3 py-2 text-right"
               onClick={() => handleSort("quantity")}
             >
-              Quantity{" "}
+              Balance{" "}
               {sortBy === "quantity" && (sortOrder === "asc" ? "↑" : "↓")}
             </th>
             <th
@@ -215,7 +120,28 @@ const TokenList: React.FC = () => {
             </tr>
           ) : filteredTokens.length > 0 ? (
             filteredTokens.map((token) => (
-              <TokenRow key={token.id} token={token} />
+              <tr
+                key={token.id}
+                className="hover:bg-neutral-800/50 cursor-pointer transition-all duration-200"
+              >
+                <td className="px-3 py-3 flex items-center space-x-3">
+                  <img
+                    src={`/SVG/${token.symbol.toLowerCase()}.svg`}
+                    alt={token.symbol}
+                    className="w-6 h-6 rounded-full bg-white object-contain"
+                  />
+                  <div>
+                    <p className="font-medium">{token.symbol}</p>
+                    <p className="text-xs text-neutral-400">{token.name}</p>
+                  </div>
+                </td>
+                <td className="px-3 py-3 text-right">
+                  {formatCrypto(token.balance, token.symbol)}
+                </td>
+                <td className="px-3 py-3 text-right">
+                  {formatCurrency(token.balance * token.price)}
+                </td>
+              </tr>
             ))
           ) : (
             <tr>

@@ -15,6 +15,7 @@
     "@scure/bip32": "^1.7.0",
     "@scure/bip39": "^1.6.0",
     "@supabase/supabase-js": "^2.39.7",
+    "@tatumio/tatum": "^4.2.51",
     "@uniswap/sdk-core": "^4.0.10",
     "@uniswap/v3-sdk": "^3.10.2",
     "alchemy-sdk": "^3.1.2",
