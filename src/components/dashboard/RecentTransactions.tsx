@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Card from "../ui/Card";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -7,85 +7,50 @@ import {
   formatCrypto,
   formatAddress,
 } from "../../utils/formatters";
+import { fetchTransactions } from "../../utils/fetchTransactions";
+import { NormalizedTransaction } from "../../types/wallet"; // adjust import path
+import { useAuthStore } from "../../store/authStore";
 
 const RecentTransactions: React.FC = () => {
-  interface Transaction {
-    id: string;
-    type: "receive" | "send";
-    token: string;
-    amount: number;
-    timestamp: number;
-    address: string;
-  }
-
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { wallets } = useAuthStore();
+  const [transactions, setTransactions] = useState<NormalizedTransaction[]>([]);
   const navigate = useNavigate();
-  const ethAddress = "0xYourEthereumAddress";
-  const btcAddress = "YourBitcoinAddress";
-  const apiKey = import.meta.env.VITE_ETHERSCAN_API_KEY;
-
-  const fetchEthereumTransactions = async (
-    ethAddress: string,
-    apiKey: string
-  ) => {
-    const response = await fetch(
-      `https://api.etherscan.io/api?module=account&action=txlist&address=${ethAddress}&startblock=0&endblock=99999999&sort=desc&apikey=${apiKey}`
-    );
-    const data = await response.json();
-    return data.result.map((tx: any) => ({
-      id: tx.hash,
-      type:
-        tx.to.toLowerCase() === ethAddress.toLowerCase() ? "receive" : "send",
-      token: "ETH",
-      amount: Number(tx.value) / 1e18,
-      timestamp: Number(tx.timeStamp) * 1000,
-      address: tx.to,
-    }));
-  };
-
-  const fetchBitcoinTransactions = async (btcAddress: string) => {
-    const response = await fetch(
-      `https://blockchain.info/rawaddr/${btcAddress}`
-    );
-    const data = await response.json();
-    return data.txs.map((tx: any) => {
-      const isReceive = tx.out.some(
-        (output: any) => output.addr === btcAddress
-      );
-      const value = tx.out.reduce((sum: number, output: any) => {
-        if (output.addr === btcAddress) return sum + output.value;
-        return sum;
-      }, 0);
-      return {
-        id: tx.hash,
-        type: isReceive ? "receive" : "send",
-        token: "BTC",
-        amount: value / 1e8,
-        timestamp: tx.time * 1000,
-        address: isReceive ? btcAddress : tx.out[0].addr,
-      };
-    });
-  };
-
-  const fetchAllTransactions = async (
-    ethAddress: string,
-    btcAddress: string,
-    apiKey: string
-  ) => {
-    const [ethTxs, btcTxs] = await Promise.all([
-      fetchEthereumTransactions(ethAddress, apiKey),
-      fetchBitcoinTransactions(btcAddress),
-    ]);
-    return [...ethTxs, ...btcTxs].sort((a, b) => b.timestamp - a.timestamp);
-  };
+  const hasLoaded = useRef(false); // to prevent double fetch
 
   useEffect(() => {
+    if (
+      !wallets?.ethereum?.address ||
+      !wallets?.bitcoin?.address ||
+      hasLoaded.current
+    )
+      return;
+
+    hasLoaded.current = true;
+
     const fetchData = async () => {
-      const txs = await fetchAllTransactions(ethAddress, btcAddress, apiKey);
-      setTransactions(txs.slice(0, 3));
+      try {
+        const txs = await fetchTransactions(
+          "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+          5,
+          0,
+          wallets.bitcoin.address,
+          5,
+          0
+        );
+        setTransactions(txs.transactions.slice(0, 5));
+      } catch (err) {
+        console.error("Failed to fetch transactions:", err);
+      }
     };
     fetchData();
-  }, []);
+  }, [wallets?.ethereum?.address, wallets?.bitcoin?.address]);
+
+  const formatAmount = (amount: string, symbol: string, chain: string) => {
+    const parsed = parseFloat(amount);
+    if (chain === "ethereum-mainnet") return formatCrypto(parsed, symbol);
+    if (chain === "bitcoin-mainnet") return formatCrypto(parsed / 1e8, "BTC");
+    return parsed;
+  };
 
   return (
     <Card className="w-full animate-slide-up">
@@ -101,44 +66,52 @@ const RecentTransactions: React.FC = () => {
 
       {transactions.length > 0 ? (
         <div className="space-y-3">
-          {transactions.map((tx) => (
-            <div key={tx.id} className="flex items-center justify-between py-2">
-              <div className="flex items-center">
-                <div
-                  className={`p-2 rounded-full ${
-                    tx.type === "receive" ? "bg-success/20" : "bg-error/20"
-                  }`}
-                >
-                  {tx.type === "receive" ? (
-                    <ArrowDownRight size={20} className="text-success" />
-                  ) : (
-                    <ArrowUpRight size={20} className="text-error" />
-                  )}
+          {transactions.map((tx) => {
+            const isReceive = tx.transactionSubtype === "incoming";
+            const token = tx.chain === "ethereum-mainnet" ? "ETH" : "BTC";
+
+            return (
+              <div
+                key={tx.hash}
+                className="flex items-center justify-between py-2"
+              >
+                <div className="flex items-center">
+                  <div
+                    className={`p-2 rounded-full ${
+                      isReceive ? "bg-success/20" : "bg-error/20"
+                    }`}
+                  >
+                    {isReceive ? (
+                      <ArrowDownRight size={20} className="text-success" />
+                    ) : (
+                      <ArrowUpRight size={20} className="text-error" />
+                    )}
+                  </div>
+                  <div className="ml-3">
+                    <p className="font-medium">
+                      {isReceive ? "Received" : "Sent"} {token}
+                    </p>
+                    <p className="text-xs text-neutral-400">
+                      {formatDateTime(tx.timestamp)}
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-3">
-                  <p className="font-medium">
-                    {tx.type === "receive" ? "Received" : "Sent"} {tx.token}
+                <div className="text-right">
+                  <p
+                    className={`font-medium ${
+                      isReceive ? "text-success" : "text-error"
+                    }`}
+                  >
+                    {isReceive ? "+" : "-"}{" "}
+                    {formatAmount(tx.amount, tx.symbol, tx.chain)}
                   </p>
                   <p className="text-xs text-neutral-400">
-                    {formatDateTime(tx.timestamp)}
+                    {formatAddress(tx.counterAddress)}
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p
-                  className={`font-medium ${
-                    tx.type === "receive" ? "text-success" : "text-error"
-                  }`}
-                >
-                  {tx.type === "receive" ? "+" : "-"}{" "}
-                  {formatCrypto(tx.amount, tx.token)}
-                </p>
-                <p className="text-xs text-neutral-400">
-                  {formatAddress(tx.address)}
-                </p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-6 text-neutral-400">

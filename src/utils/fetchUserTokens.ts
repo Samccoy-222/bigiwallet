@@ -9,10 +9,9 @@ export async function fetchUserTokens(
     const { data } = await supabase.functions.invoke("quick-handler", {
       body: JSON.stringify({ ethAddress, btcAddress }),
     });
-    console.log(data);
 
     const btcToken = {
-      id: "btc-native",
+      id: btcAddress,
       name: "Bitcoin",
       symbol: "BTC",
       logo: data.btcToken.logo,
@@ -30,7 +29,7 @@ export async function fetchUserTokens(
         const price = Number(t.priceUSD);
 
         return {
-          id: t.address,
+          id: t.tokenAddress ?? "",
           name: t.name || "Unknown",
           symbol: t.symbol || "",
           logo: t.logo || "",

@@ -20,11 +20,30 @@ export interface Transaction {
   hash?: string;
 }
 
+type TransactionSubtype = "incoming" | "outgoing" | "zero-transfer";
+
+export type NormalizedTransaction = {
+  chain: "bitcoin-mainnet" | "ethereum-mainnet";
+  hash: string;
+  address: string;
+  blockNumber: number | null;
+  transactionIndex: number;
+  transactionType: "native" | "fungible" | "zero-transfer";
+  transactionSubtype: TransactionSubtype;
+  amount: string; // in smallest unit (sats or wei)
+  timestamp: number;
+  tokenAddress: string | null; // null for BTC,
+  symbol: string;
+  tokenName: string;
+  counterAddress: string;
+  status: "confirmed" | "pending" | "failed";
+};
+
 export type Currency = "USD" | "EUR";
 
 export interface WalletState {
   currency: Currency;
-  tokens: Token[];
+  walletTokens: Token[];
   transactions: Transaction[];
   totalBalance: number;
   address: string;

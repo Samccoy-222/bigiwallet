@@ -9,8 +9,23 @@ export const formatCurrency = (value: number, digits = 2) => {
 };
 
 // Format crypto amount
-export const formatCrypto = (amount: number, symbol: string) => {
-  return `${amount.toFixed(amount < 0.01 ? 8 : 4)} ${symbol}`;
+export const formatCrypto = (
+  amount: number,
+  symbol: string,
+  decimals: number = amount < 0.01 ? 8 : 4
+) => {
+  const formattedAmount = amount
+    .toLocaleString("en-US", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })
+    .replace(/\.?0+$/, ""); // remove trailing zeros
+
+  const shortSymbol = symbol?.startsWith("0x")
+    ? `${symbol.slice(0, 6)}...${symbol.slice(-4)}`
+    : symbol;
+
+  return `${formattedAmount} ${shortSymbol}`;
 };
 
 // Abbreviate large numbers
@@ -37,6 +52,18 @@ export const formatAddress = (address: string, start = 4, end = 4): string => {
 };
 
 // Format date
+
+// Format time
+// Format time as "10:18 AM"
+export const formatTime = (timestamp: number): string => {
+  return new Date(timestamp).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+// Format date as "May 19, 2025"
 export const formatDate = (timestamp: number): string => {
   return new Date(timestamp).toLocaleDateString("en-US", {
     year: "numeric",
@@ -45,17 +72,17 @@ export const formatDate = (timestamp: number): string => {
   });
 };
 
-// Format time
-export const formatTime = (timestamp: number): string => {
-  return new Date(timestamp).toLocaleTimeString("en-US", {
+// Combine date and time as "May 19, 2025 at 10:18 AM"
+export const formatDateTime = (timestamp: number) => {
+  const date = new Date(Number(timestamp));
+  if (isNaN(date.getTime())) return "Invalid Date";
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
-};
-
-// Format date and time
-export const formatDateTime = (timestamp: number): string => {
-  return `${formatDate(timestamp)} at ${formatTime(timestamp)}`;
 };
 
 // Format percentage

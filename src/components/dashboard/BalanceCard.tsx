@@ -1,23 +1,22 @@
 import React, { useState } from "react";
-import { Eye, EyeOff, RefreshCw, Send, QrCode, CreditCard } from "lucide-react";
+import { Eye, EyeOff, Send, QrCode, CreditCard } from "lucide-react";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
 import { formatCurrency } from "../../utils/formatters";
-import { useWalletStore } from "../../store/walletStore";
 import ActionButton from "../common/ActionButton";
 import { useNavigate } from "react-router-dom";
 import BuyCryptoModal from "../common/BuyCryptoModal";
+import { usePriceChart } from "../../context/PriceChartContext";
 
 const BalanceCard: React.FC = () => {
   const navigate = useNavigate();
-  const { totalBalance, refreshBalances } = useWalletStore();
+  const { totalBalance } = usePriceChart();
   const [isBalanceHidden, setIsBalanceHidden] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    refreshBalances();
 
     // Simulate refresh delay
     setTimeout(() => {
@@ -65,20 +64,12 @@ const Header: React.FC<{
   isRefreshing: boolean;
   onToggleBalance: () => void;
   onRefresh: () => void;
-}> = ({ isBalanceHidden, isRefreshing, onToggleBalance, onRefresh }) => (
+}> = ({ isBalanceHidden, onToggleBalance }) => (
   <div className="flex justify-between items-center mb-4">
     <h2 className="text-lg font-medium text-neutral-300">Total Balance</h2>
     <div className="flex space-x-2">
       <Button variant="ghost" size="sm" onClick={onToggleBalance}>
         {isBalanceHidden ? <Eye size={18} /> : <EyeOff size={18} />}
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onRefresh}
-        disabled={isRefreshing}
-      >
-        <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
       </Button>
     </div>
   </div>

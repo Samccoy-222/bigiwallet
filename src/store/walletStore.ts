@@ -13,10 +13,11 @@ interface WalletStore extends WalletState {
     transaction: Omit<Transaction, "id" | "timestamp" | "status">
   ) => void;
   refreshBalances: () => void;
+  setWalletTokens: (tokens: Token[]) => void;
 }
 
 export const useWalletStore = create<WalletStore>((set, get) => ({
-  tokens: mockTokens,
+  walletTokens: [],
   currency: "USD",
   transactions: mockTransactions,
   totalBalance: mockTokens.reduce(
@@ -28,7 +29,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
   selectedToken: null,
 
   sortTokens: (key: "name" | "balance" | "value") => {
-    const sortedTokens = [...get().tokens];
+    const sortedTokens = [...get().walletTokens];
 
     switch (key) {
       case "name":
@@ -44,7 +45,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         break;
     }
 
-    set({ tokens: sortedTokens });
+    set({ walletTokens: sortedTokens });
   },
 
   unlockWallet: (password: string) => {
@@ -83,7 +84,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         transactions: state.transactions.map((tx) =>
           tx.id === newTransaction.id ? { ...tx, status: "completed" } : tx
         ),
-        tokens: state.tokens.map((token) =>
+        tokens: state.walletTokens.map((token) =>
           token.symbol === transaction.token
             ? {
                 ...token,
@@ -98,7 +99,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
       }));
 
       // Update total balance
-      const totalBalance = get().tokens.reduce(
+      const totalBalance = get().walletTokens.reduce(
         (sum, token) => sum + token.balance * token.price,
         0
       );
@@ -108,7 +109,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
 
   refreshBalances: () => {
     // In a real app, this would fetch updated balances from a blockchain API
-    const updatedTokens = get().tokens.map((token) => ({
+    const updatedTokens = get().walletTokens.map((token) => ({
       ...token,
       price: token.price * (1 + (Math.random() * 0.06 - 0.03)), // Random price change ±3%
     }));
@@ -119,8 +120,9 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
     );
 
     set({
-      tokens: updatedTokens,
+      walletTokens: updatedTokens,
       totalBalance,
     });
   },
+  setWalletTokens: (tokens: Token[]) => set({ walletTokens: tokens }),
 }));

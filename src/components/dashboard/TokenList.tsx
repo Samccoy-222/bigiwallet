@@ -5,12 +5,16 @@ import { Token } from "../../types/wallet";
 import Card from "../ui/Card";
 import { fetchUserTokens } from "../../utils/fetchUserTokens";
 import { formatCurrency, formatCrypto } from "../../utils/formatters";
+import { usePriceChart } from "../../context/PriceChartContext";
+import { useWalletStore } from "../../store/walletStore";
 
 type SortBy = "name" | "quantity" | "value";
 type SortOrder = "asc" | "desc";
 
 const TokenList: React.FC = () => {
   const { wallets } = useAuthStore();
+  const { setTotalBalance } = usePriceChart();
+  const { setWalletTokens } = useWalletStore();
   const [tokens, setTokens] = useState<Token[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("value");
@@ -36,6 +40,8 @@ const TokenList: React.FC = () => {
           wallets.bitcoin.address
         );
         setTokens(fetched.tokens);
+        setWalletTokens(fetched.tokens);
+        setTotalBalance(fetched.totalValue);
       } catch (err) {
         console.error("Token fetch failed", err);
       } finally {

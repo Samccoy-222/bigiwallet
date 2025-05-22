@@ -4,14 +4,16 @@ import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import TokenIcon from "../components/ui/TokenIcon";
 import { useWalletStore } from "../store/walletStore";
-import { formatAddress } from "../utils/formatters";
 import QRCode from "qrcode.react";
 import { useParams } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
 
 const SendReceive: React.FC = () => {
   const params = useParams();
-  const { tokens, address, selectedToken, selectToken, sendTransaction } =
+  const { walletTokens, selectedToken, selectToken, sendTransaction } =
     useWalletStore();
+  const [receiveAddress, setReceiveAddress] = useState("");
+  const { wallets } = useAuthStore();
   const [activeTab, setActiveTab] = useState<"send" | "receive">(
     params.action === "receive" ? "receive" : "send"
   );
@@ -20,17 +22,32 @@ const SendReceive: React.FC = () => {
   const [addressCopied, setAddressCopied] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const currentToken = selectedToken
-    ? tokens.find((t) => t.id === selectedToken)
-    : tokens[0];
+  const receiveData = [
+    {
+      name: "Bitcoin",
+      symbol: "BTC",
+      address: wallets?.bitcoin.address,
+    },
+    {
+      name: "Ethereum",
+      symbol: "ETH",
+      address: wallets?.ethereum.address,
+    },
+  ];
+
+  const currentToken = receiveAddress
+    ? receiveData.find((t) => t.address === receiveAddress)
+    : receiveData[0];
+
+  const toSendToken = walletTokens.find((t) => t.id === selectedToken);
 
   const handleSend = () => {
-    if (!currentToken || !recipientAddress || !amount) return;
+    if (!toSendToken || !recipientAddress || !amount) return;
 
     sendTransaction({
       type: "send",
       amount: parseFloat(amount),
-      token: currentToken.symbol,
+      token: toSendToken.symbol,
       address: recipientAddress,
     });
 
@@ -45,10 +62,14 @@ const SendReceive: React.FC = () => {
   };
 
   const copyAddress = () => {
-    navigator.clipboard.writeText(address);
+    navigator.clipboard.writeText(receiveAddress);
     setAddressCopied(true);
     setTimeout(() => setAddressCopied(false), 2000);
   };
+
+  useEffect(() => {
+    setReceiveAddress(wallets?.bitcoin.address || "");
+  }, [wallets?.bitcoin.address]);
 
   return (
     <div className="max-w-xl mx-auto pb-8">
@@ -85,7 +106,7 @@ const SendReceive: React.FC = () => {
       <Card className="w-full animate-fade-in">
         {activeTab === "send" ? (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold">Send {currentToken?.symbol}</h2>
+            <h2 className="text-xl font-bold">Send {toSendToken?.symbol}</h2>
 
             {/* Token Selector */}
             <div>
@@ -97,7 +118,7 @@ const SendReceive: React.FC = () => {
                 value={selectedToken || ""}
                 onChange={(e) => selectToken(e.target.value)}
               >
-                {tokens.map((token) => (
+                {walletTokens.map((token) => (
                   <option key={token.id} value={token.id}>
                     {token.name} ({token.symbol})
                   </option>
@@ -133,23 +154,23 @@ const SendReceive: React.FC = () => {
                   onChange={(e) => setAmount(e.target.value)}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                  {currentToken && (
+                  {toSendToken && (
                     <div className="flex items-center">
                       <span className="text-neutral-400 mr-2">
-                        {currentToken.symbol}
+                        {toSendToken.symbol}
                       </span>
                       <TokenIcon
-                        symbol={currentToken.symbol}
-                        logo={currentToken.logo}
+                        symbol={toSendToken.symbol}
+                        // logo={currentToken.logo}
                         size="sm"
                       />
                     </div>
                   )}
                 </div>
               </div>
-              {currentToken && (
+              {toSendToken && (
                 <p className="text-sm text-neutral-400 mt-1">
-                  Balance: {currentToken.balance} {currentToken.symbol}
+                  Balance: {toSendToken.balance} {toSendToken.symbol}
                 </p>
               )}
             </div>
@@ -169,7 +190,7 @@ const SendReceive: React.FC = () => {
               onClick={handleSend}
               disabled={!recipientAddress || !amount || showConfirmation}
             >
-              Send {currentToken?.symbol}
+              Send {toSendToken?.symbol}
             </Button>
           </div>
         ) : (
@@ -185,12 +206,12 @@ const SendReceive: React.FC = () => {
               </label>
               <select
                 className="input w-full"
-                value={selectedToken || ""}
-                onChange={(e) => selectToken(e.target.value)}
+                value={receiveAddress || ""}
+                onChange={(e) => setReceiveAddress(e.target.value)}
               >
-                {tokens.map((token) => (
-                  <option key={token.id} value={token.id}>
-                    {token.name} ({token.symbol})
+                {receiveData.map((network) => (
+                  <option key={network.name} value={network.address}>
+                    {network.name} ({network.symbol})
                   </option>
                 ))}
               </select>
@@ -200,7 +221,7 @@ const SendReceive: React.FC = () => {
             <div className="flex flex-col items-center justify-center py-4">
               <div className="bg-white p-3 rounded-lg mb-4">
                 <QRCode
-                  value={address}
+                  value={receiveAddress}
                   size={180}
                   level="H"
                   includeMargin={true}
@@ -216,7 +237,7 @@ const SendReceive: React.FC = () => {
                   <input
                     type="text"
                     className="input flex-1"
-                    value={address}
+                    value={receiveAddress}
                     readOnly
                   />
                   <Button
@@ -240,8 +261,10 @@ const SendReceive: React.FC = () => {
             <div className="bg-warning/10 border border-warning/20 text-warning rounded-lg p-4 flex items-start">
               <AlertCircle size={20} className="mr-2 mt-0.5 flex-shrink-0" />
               <p className="text-sm">
-                Only send {currentToken?.symbol} to this address. Sending any
-                other coin or token may result in permanent loss.
+                Only send{" "}
+                {currentToken?.name === "Bitcoin" ? "BTC" : "ethereum tokens"}{" "}
+                to this address. Sending any other coin or token may result in
+                permanent loss.
               </p>
             </div>
           </div>
