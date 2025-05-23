@@ -3,6 +3,7 @@ import axios from "axios";
 import * as bitcoin from "bitcoinjs-lib";
 import * as ecc from "tiny-secp256k1";
 import ECPairFactory from "ecpair";
+import toast from "react-hot-toast";
 
 const ECPair = ECPairFactory(ecc);
 const NETWORK = bitcoin.networks.bitcoin;
@@ -40,11 +41,31 @@ export const sendErc20Token = async (
     gasPrice: BigInt(fees),
     maxPriorityFeePerGas: BigInt("1500000000"),
   });
-  console.log("Transaction sent! Hash:", tx.hash);
+  toast.success(`Transaction sent! Hash: ${tx.hash}`, {
+    style: {
+      border: "1px solid #1e293b",
+      padding: "16px",
+      color: "#1e293b",
+    },
+    iconTheme: {
+      primary: "#713200",
+      secondary: "#FFFAEE",
+    },
+  });
 
   // 8. Optionally wait for confirmation
   await tx.wait();
-  console.log("Transaction confirmed!");
+  toast.success(`Transaction confirmed!`, {
+    style: {
+      border: "1px solid #1e293b",
+      padding: "16px",
+      color: "#1e293b",
+    },
+    iconTheme: {
+      primary: "#713200",
+      secondary: "#FFFAEE",
+    },
+  });
 };
 
 export const sendEth = async (
@@ -73,11 +94,30 @@ export const sendEth = async (
     gasLimit,
   });
 
-  console.log("Transaction sent:", tx.hash);
-
+  toast.success(`Transaction sent! Hash: ${tx.hash}`, {
+    style: {
+      border: "1px solid #1e293b",
+      padding: "16px",
+      color: "#1e293b",
+    },
+    iconTheme: {
+      primary: "#713200",
+      secondary: "#FFFAEE",
+    },
+  });
   // 6. Optionally wait for confirmation
   await tx.wait();
-  console.log("Transaction confirmed!");
+  toast.success(`Transaction confirmed!`, {
+    style: {
+      border: "1px solid #1e293b",
+      padding: "16px",
+      color: "#1e293b",
+    },
+    iconTheme: {
+      primary: "#713200",
+      secondary: "#FFFAEE",
+    },
+  });
 };
 
 interface SendBTCParams {
@@ -164,6 +204,17 @@ export async function sendBTC({
       headers: { "Content-Type": "text/plain" },
     }
   );
+  toast.success(`Transaction confirmed`, {
+    style: {
+      border: "1px solid #1e293b",
+      padding: "16px",
+      color: "#1e293b",
+    },
+    iconTheme: {
+      primary: "#713200",
+      secondary: "#FFFAEE",
+    },
+  });
 
   return broadcastRes.data; // txid
 }

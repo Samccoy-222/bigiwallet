@@ -9,7 +9,7 @@ import { useParams } from "react-router-dom";
 import { supabase, useAuthStore } from "../store/authStore";
 import RecipientAddressInput from "../components/common/RecipientInput";
 import { sendErc20Token, sendEth, sendBTC } from "../utils/sendCrypto";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 
 type FeeLevel = "Slow" | "Medium" | "Fast";
 const SendReceive: React.FC = () => {
@@ -72,17 +72,6 @@ const SendReceive: React.FC = () => {
         feeSats: Number(fees[feeLevel.toLowerCase()]),
       });
     }
-    toast.success("Look at my styles.", {
-      style: {
-        border: "1px solid #713200",
-        padding: "16px",
-        color: "#713200",
-      },
-      iconTheme: {
-        primary: "#713200",
-        secondary: "#FFFAEE",
-      },
-    });
   };
   const copyAddress = () => {
     navigator.clipboard.writeText(receiveAddress);

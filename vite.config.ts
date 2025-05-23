@@ -1,10 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { NodeGlobalsPolyfillPlugin } from "@esbuild-plugins/node-globals-polyfill";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
+import wasm from "vite-plugin-wasm";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), wasm()],
   define: {
     global: "globalThis", // ✅ Needed for some crypto libs
     "process.env": {},
