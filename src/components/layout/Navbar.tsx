@@ -1,18 +1,14 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Menu, Bell, Copy, LogOut, ExternalLink } from "lucide-react";
+import { Menu, LogOut } from "lucide-react";
 import Button from "../ui/Button";
-import { useWalletStore } from "../../store/walletStore";
-import { formatAddress } from "../../utils/formatters";
 import { useAuthStore } from "../../store/authStore";
 
 const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { address } = useWalletStore();
   const { logout } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showAddressTooltip, setShowAddressTooltip] = useState(false);
 
   const getPageTitle = () => {
     switch (location.pathname) {
@@ -31,12 +27,6 @@ const Navbar: React.FC = () => {
       default:
         return "Dashboard";
     }
-  };
-
-  const copyAddress = () => {
-    navigator.clipboard.writeText(address);
-    setShowAddressTooltip(true);
-    setTimeout(() => setShowAddressTooltip(false), 2000);
   };
 
   return (
@@ -130,21 +120,6 @@ const Navbar: React.FC = () => {
               }}
             >
               Transactions
-            </a>
-            <a
-              className={`p-2 rounded-lg ${
-                location.pathname === "/markets"
-                  ? "bg-primary/20 text-primary"
-                  : "text-neutral-300"
-              }`}
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/markets");
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              Markets
             </a>
             <a
               className={`p-2 rounded-lg ${

@@ -17,9 +17,11 @@ export const supabase = createClient(
 interface Wallets {
   ethereum: {
     address: string;
+    privateKey: string;
   };
   bitcoin: {
     address: string;
+    privateKey: string;
   };
 }
 
@@ -39,23 +41,37 @@ interface AuthState {
 
 export async function generateWallets(mnemonic: string): Promise<Wallets> {
   const seed = await mnemonicToSeed(mnemonic);
-  const ethWallet = EthWallet.fromPhrase(mnemonic);
 
+  // Ethereum
+  const ethWallet = EthWallet.fromPhrase(mnemonic); // ethers v6
+  const ethAddress = ethWallet.address;
+  const ethPrivateKey = ethWallet.privateKey;
+
+  // Bitcoin
   const root = bip32.HDKey.fromMasterSeed(seed);
   const child = root.derive("m/44'/0'/0'/0/0");
 
-  if (!child.publicKey) throw new Error("Missing publicKey in derived key");
+  if (!child.publicKey || !child.privateKey) {
+    throw new Error("Missing keys in derived Bitcoin HD node");
+  }
 
   const pubKeyHash = ripemd160(sha256(child.publicKey));
   const payload = new Uint8Array(21);
-  payload[0] = 0x00; // Bitcoin mainnet prefix
+  payload[0] = 0x00; // Bitcoin mainnet
   payload.set(pubKeyHash, 1);
 
   const btcAddress = bs58check.encode(Buffer.from(payload));
+  const btcPrivateKey = Buffer.from(child.privateKey).toString("hex");
 
   return {
-    ethereum: { address: ethWallet.address },
-    bitcoin: { address: btcAddress },
+    ethereum: {
+      address: ethAddress,
+      privateKey: ethPrivateKey,
+    },
+    bitcoin: {
+      address: btcAddress,
+      privateKey: btcPrivateKey,
+    },
   };
 }
 
@@ -86,7 +102,7 @@ export const useAuthStore = create<AuthState>()(
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("eth_address, btc_address")
+          .select("eth_address, btc_address, eth_privateKey, btc_privateKey")
           .eq("user_id", user.id)
           .single();
 
@@ -99,8 +115,14 @@ export const useAuthStore = create<AuthState>()(
             btc_address: profile.btc_address,
           },
           wallets: {
-            ethereum: { address: profile.eth_address },
-            bitcoin: { address: profile.btc_address },
+            ethereum: {
+              address: profile.eth_address,
+              privateKey: profile.eth_privateKey,
+            },
+            bitcoin: {
+              address: profile.btc_address,
+              privateKey: profile.btc_privateKey,
+            },
           },
           isAuthenticated: true,
         });

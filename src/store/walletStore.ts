@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { WalletState, Token, Transaction } from "../types/wallet";
+import { persist } from "zustand/middleware";
+import { WalletState, Token, Transaction, Currency } from "../types/wallet";
 import { mockTokens, mockTransactions } from "../utils/mockData";
-import { Currency } from "../types/wallet";
 
 interface WalletStore extends WalletState {
   unlockWallet: (password: string) => void;
@@ -16,113 +16,132 @@ interface WalletStore extends WalletState {
   setWalletTokens: (tokens: Token[]) => void;
 }
 
-export const useWalletStore = create<WalletStore>((set, get) => ({
-  walletTokens: [],
-  currency: "USD",
-  transactions: mockTransactions,
-  totalBalance: mockTokens.reduce(
-    (sum, token) => sum + token.balance * token.price,
-    0
-  ),
-  address: "0x1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
-  isUnlocked: true, // For demo purposes, the wallet starts unlocked
-  selectedToken: null,
-
-  sortTokens: (key: "name" | "balance" | "value") => {
-    const sortedTokens = [...get().walletTokens];
-
-    switch (key) {
-      case "name":
-        sortedTokens.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "balance":
-        sortedTokens.sort((a, b) => b.balance - a.balance);
-        break;
-      case "value":
-        sortedTokens.sort((a, b) => b.balance * b.price - a.balance * a.price);
-        break;
-      default:
-        break;
-    }
-
-    set({ walletTokens: sortedTokens });
-  },
-
-  unlockWallet: (password: string) => {
-    // In a real app, this would verify the password
-    console.log(`Unlocking wallet with password: ${password}`);
-    set({ isUnlocked: true });
-  },
-
-  lockWallet: () => {
-    set({ isUnlocked: false });
-  },
-
-  setCurrency: (currency: Currency) => {
-    set({ currency });
-  },
-
-  selectToken: (tokenId: string | null) => {
-    set({ selectedToken: tokenId });
-  },
-
-  sendTransaction: (transaction) => {
-    const newTransaction: Transaction = {
-      id: `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      timestamp: Date.now(),
-      status: "pending",
-      ...transaction,
-    };
-
-    set((state) => ({
-      transactions: [newTransaction, ...state.transactions],
-    }));
-
-    // Simulate transaction confirmation after 2 seconds
-    setTimeout(() => {
-      set((state) => ({
-        transactions: state.transactions.map((tx) =>
-          tx.id === newTransaction.id ? { ...tx, status: "completed" } : tx
-        ),
-        tokens: state.walletTokens.map((token) =>
-          token.symbol === transaction.token
-            ? {
-                ...token,
-                balance:
-                  token.balance -
-                  (transaction.type === "send"
-                    ? transaction.amount
-                    : -transaction.amount),
-              }
-            : token
-        ),
-      }));
-
-      // Update total balance
-      const totalBalance = get().walletTokens.reduce(
+export const useWalletStore = create<WalletStore>()(
+  persist(
+    (set, get) => ({
+      walletTokens: mockTokens,
+      currency: "USD",
+      transactions: mockTransactions,
+      totalBalance: mockTokens.reduce(
         (sum, token) => sum + token.balance * token.price,
         0
-      );
-      set({ totalBalance });
-    }, 2000);
-  },
+      ),
+      address: "0x1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
+      isUnlocked: true, // Start unlocked for demo
+      selectedToken: null,
 
-  refreshBalances: () => {
-    // In a real app, this would fetch updated balances from a blockchain API
-    const updatedTokens = get().walletTokens.map((token) => ({
-      ...token,
-      price: token.price * (1 + (Math.random() * 0.06 - 0.03)), // Random price change ±3%
-    }));
+      unlockWallet: (password: string) => {
+        console.log(`Unlocking wallet with password: ${password}`);
+        set({ isUnlocked: true });
+      },
 
-    const totalBalance = updatedTokens.reduce(
-      (sum, token) => sum + token.balance * token.price,
-      0
-    );
+      lockWallet: () => {
+        set({ isUnlocked: false });
+      },
 
-    set({
-      walletTokens: updatedTokens,
-      totalBalance,
-    });
-  },
-  setWalletTokens: (tokens: Token[]) => set({ walletTokens: tokens }),
-}));
+      selectToken: (tokenId: string | null) => {
+        set({ selectedToken: tokenId });
+      },
+
+      sortTokens: (key: "name" | "balance" | "value") => {
+        const sortedTokens = [...get().walletTokens];
+
+        switch (key) {
+          case "name":
+            sortedTokens.sort((a, b) => a.name.localeCompare(b.name));
+            break;
+          case "balance":
+            sortedTokens.sort((a, b) => b.balance - a.balance);
+            break;
+          case "value":
+            sortedTokens.sort(
+              (a, b) => b.balance * b.price - a.balance * a.price
+            );
+            break;
+        }
+
+        set({ walletTokens: sortedTokens });
+      },
+
+      setCurrency: (currency: Currency) => {
+        set({ currency });
+      },
+
+      sendTransaction: (transaction) => {
+        const newTransaction: Transaction = {
+          id: `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          timestamp: Date.now(),
+          status: "pending",
+          ...transaction,
+        };
+
+        set((state) => ({
+          transactions: [newTransaction, ...state.transactions],
+        }));
+
+        // Simulate confirmation
+        setTimeout(() => {
+          const updatedTokens = get().walletTokens.map((token) =>
+            token.symbol === transaction.token
+              ? {
+                  ...token,
+                  balance:
+                    token.balance -
+                    (transaction.type === "send"
+                      ? transaction.amount
+                      : -transaction.amount),
+                }
+              : token
+          );
+
+          const updatedTransactions = get().transactions.map((tx) =>
+            tx.id === newTransaction.id
+              ? { ...tx, status: "completed" as "completed" }
+              : tx
+          );
+
+          const totalBalance = updatedTokens.reduce(
+            (sum, token) => sum + token.balance * token.price,
+            0
+          );
+
+          set({
+            transactions: updatedTransactions,
+            walletTokens: updatedTokens,
+            totalBalance,
+          });
+        }, 2000);
+      },
+
+      refreshBalances: () => {
+        const updatedTokens = get().walletTokens.map((token) => ({
+          ...token,
+          price: token.price * (1 + (Math.random() * 0.06 - 0.03)), // ±3%
+        }));
+
+        const totalBalance = updatedTokens.reduce(
+          (sum, token) => sum + token.balance * token.price,
+          0
+        );
+
+        set({ walletTokens: updatedTokens, totalBalance });
+      },
+
+      setWalletTokens: (tokens: Token[]) => {
+        set({ walletTokens: tokens });
+      },
+    }),
+    {
+      name: "wallet-storage", // key in localStorage
+      partialize: (state) => ({
+        walletTokens: state.walletTokens,
+        currency: state.currency,
+        transactions: state.transactions,
+        totalBalance: state.totalBalance,
+        address: state.address,
+        isUnlocked: state.isUnlocked,
+        selectedToken: state.selectedToken,
+      }),
+    }
+  )
+);

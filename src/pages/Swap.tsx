@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowDownUp, Settings, Info, AlertCircle } from 'lucide-react';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import TokenIcon from '../components/ui/TokenIcon';
-import { Token } from '@uniswap/sdk-core';
-import { useWalletStore } from '../store/walletStore';
-import { formatCurrency, formatCrypto } from '../utils/formatters';
+import React, { useState, useEffect } from "react";
+import { ArrowDownUp, Settings, Info, AlertCircle } from "lucide-react";
+import Card from "../components/ui/Card";
+import Button from "../components/ui/Button";
+import TokenIcon from "../components/ui/TokenIcon";
+import { Token } from "@uniswap/sdk-core";
+import { useWalletStore } from "../store/walletStore";
+import { formatCurrency, formatCrypto } from "../utils/formatters";
 
 const Swap: React.FC = () => {
-  const { tokens, address } = useWalletStore();
-  const [fromToken, setFromToken] = useState(tokens[0]);
-  const [toToken, setToToken] = useState(tokens[1]);
-  const [fromAmount, setFromAmount] = useState('');
-  const [toAmount, setToAmount] = useState('');
-  const [slippage, setSlippage] = useState('0.5');
+  const { walletTokens, address } = useWalletStore();
+  const [fromToken, setFromToken] = useState(walletTokens[0]);
+  const [toToken, setToToken] = useState(walletTokens[1]);
+  const [fromAmount, setFromAmount] = useState("");
+  const [toAmount, setToAmount] = useState("");
+  const [slippage, setSlippage] = useState("0.5");
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [priceImpact, setPriceImpact] = useState<number | null>(null);
@@ -22,21 +22,21 @@ const Swap: React.FC = () => {
   // Simulated price calculation
   const calculatePrice = async (amount: string, from: any, to: any) => {
     if (!amount || !from || !to) return;
-    
+
     try {
       // Simulate price calculation with a simple ratio for demo
       const fromPrice = from.price;
       const toPrice = to.price;
       const ratio = toPrice / fromPrice;
       const calculatedAmount = parseFloat(amount) * ratio;
-      
+
       // Simulate price impact
       const impact = (Math.random() * 2).toFixed(2);
       setPriceImpact(parseFloat(impact));
-      
+
       setToAmount(calculatedAmount.toFixed(6));
     } catch (error) {
-      console.error('Price calculation error:', error);
+      console.error("Price calculation error:", error);
     }
   };
 
@@ -50,18 +50,18 @@ const Swap: React.FC = () => {
     setLoading(true);
     try {
       // Simulate swap delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       // Reset form
-      setFromAmount('');
-      setToAmount('');
+      setFromAmount("");
+      setToAmount("");
       setPriceImpact(null);
-      
+
       // Show success message
-      alert('Swap successful!');
+      alert("Swap successful!");
     } catch (error) {
-      console.error('Swap error:', error);
-      alert('Swap failed. Please try again.');
+      console.error("Swap error:", error);
+      alert("Swap failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -92,14 +92,14 @@ const Swap: React.FC = () => {
           <div className="mb-6 p-4 bg-neutral-800/30 rounded-lg">
             <h3 className="text-sm font-medium mb-3">Slippage Tolerance</h3>
             <div className="flex space-x-2">
-              {['0.1', '0.5', '1.0'].map((value) => (
+              {["0.1", "0.5", "1.0"].map((value) => (
                 <button
                   key={value}
                   onClick={() => setSlippage(value)}
                   className={`px-3 py-1 rounded-lg text-sm ${
                     slippage === value
-                      ? 'bg-primary text-white'
-                      : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
+                      ? "bg-primary text-white"
+                      : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
                   }`}
                 >
                   {value}%
@@ -130,9 +130,11 @@ const Swap: React.FC = () => {
             <select
               className="input pr-20 appearance-none w-full mb-2"
               value={fromToken.id}
-              onChange={(e) => setFromToken(tokens.find(t => t.id === e.target.value)!)}
+              onChange={(e) =>
+                setFromToken(walletTokens.find((t) => t.id === e.target.value)!)
+              }
             >
-              {tokens.map((token) => (
+              {walletTokens.map((token) => (
                 <option key={token.id} value={token.id}>
                   {token.name} ({token.symbol})
                 </option>
@@ -178,9 +180,11 @@ const Swap: React.FC = () => {
             <select
               className="input pr-20 appearance-none w-full mb-2"
               value={toToken.id}
-              onChange={(e) => setToToken(tokens.find(t => t.id === e.target.value)!)}
+              onChange={(e) =>
+                setToToken(walletTokens.find((t) => t.id === e.target.value)!)
+              }
             >
-              {tokens.map((token) => (
+              {walletTokens.map((token) => (
                 <option key={token.id} value={token.id}>
                   {token.name} ({token.symbol})
                 </option>
@@ -213,7 +217,8 @@ const Swap: React.FC = () => {
                 High Price Impact
               </p>
               <p className="text-warning/80 text-sm">
-                Your trade has a price impact of {priceImpact}%. Consider reducing your trade size.
+                Your trade has a price impact of {priceImpact}%. Consider
+                reducing your trade size.
               </p>
             </div>
           </div>
@@ -225,19 +230,27 @@ const Swap: React.FC = () => {
             <div className="flex justify-between text-sm">
               <span className="text-neutral-400">Rate</span>
               <span>
-                1 {fromToken.symbol} = {(parseFloat(toAmount) / parseFloat(fromAmount)).toFixed(6)} {toToken.symbol}
+                1 {fromToken.symbol} ={" "}
+                {(parseFloat(toAmount) / parseFloat(fromAmount)).toFixed(6)}{" "}
+                {toToken.symbol}
               </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-neutral-400">Price Impact</span>
-              <span className={priceImpact && priceImpact > 1 ? 'text-warning' : ''}>
+              <span
+                className={priceImpact && priceImpact > 1 ? "text-warning" : ""}
+              >
                 {priceImpact}%
               </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-neutral-400">Minimum Received</span>
               <span>
-                {(parseFloat(toAmount) * (1 - parseFloat(slippage) / 100)).toFixed(6)} {toToken.symbol}
+                {(
+                  parseFloat(toAmount) *
+                  (1 - parseFloat(slippage) / 100)
+                ).toFixed(6)}{" "}
+                {toToken.symbol}
               </span>
             </div>
           </div>

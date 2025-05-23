@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { NodeGlobalsPolyfillPlugin } from "@esbuild-plugins/node-globals-polyfill";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineConfig({
   plugins: [react()],
@@ -11,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       buffer: "buffer", // ✅ Required for bip32/bip39 in browser
+      assert: "assert",
     },
   },
   optimizeDeps: {
