@@ -8,6 +8,10 @@ import toast from "react-hot-toast";
 const ECPair = ECPairFactory(ecc);
 const NETWORK = bitcoin.networks.bitcoin;
 
+export const provider = new ethers.JsonRpcProvider(
+  `https://mainnet.infura.io/v3/${import.meta.env.VITE_INFURA_API_SECRET}`
+);
+
 export const sendErc20Token = async (
   recipient: string,
   amount: string,
@@ -16,9 +20,6 @@ export const sendErc20Token = async (
   fees: string
 ) => {
   // 2. Connect to provider (e.g., Ethereum mainnet or testnet)
-  const provider = new ethers.JsonRpcProvider(
-    `https://mainnet.infura.io/v3/${import.meta.env.VITE_INFURA_API_SECRET}`
-  );
 
   // 3. Create wallet from private key
   const wallet = new ethers.Wallet(privateKey, provider);
