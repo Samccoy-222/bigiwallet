@@ -6,18 +6,21 @@ import {
   Bell,
   Shield,
   Key,
-  UserCog,
   RefreshCw,
   Eye,
   EyeOff,
 } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import { useWalletStore } from "../store/walletStore";
+import { supabase, useAuthStore } from "../store/authStore";
 
 const Settings: React.FC = () => {
-  const { address, lockWallet } = useWalletStore();
+  const authStore = useAuthStore();
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [passwords, setPaasswords] = useState({
+    new: "",
+    confirm: "",
+  });
   const [showRecoveryPhrase, setShowRecoveryPhrase] = useState(false);
   const [notifications, setNotifications] = useState({
     transactions: true,
@@ -27,44 +30,44 @@ const Settings: React.FC = () => {
 
   // Mock recovery phrase
   const recoveryPhrase =
+    authStore.mnemonic ||
     "valley alien library bread worry brother bundle hammer loyal barely dune brave";
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPaasswords((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveChanges = async () => {
+    if (passwords.new !== passwords.confirm) {
+      alert("New password and confirm password do not match.");
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwords.new,
+      });
+
+      if (error) {
+        console.error("Password update failed:", error.message);
+        alert("Failed to update password: " + error.message);
+      } else {
+        alert("Password updated successfully!");
+        setPaasswords({ new: "", confirm: "" });
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      alert("An unexpected error occurred.");
+    }
+  };
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto pb-8">
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
-
-      {/* Profile Section */}
-      <Card>
-        <h2 className="text-lg font-semibold mb-6 flex items-center">
-          <UserCog size={20} className="mr-2 text-primary" />
-          Account
-        </h2>
-
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-2">
-              Your Wallet Address
-            </label>
-            <input
-              type="text"
-              className="input w-full bg-neutral-800/50"
-              value={address}
-              readOnly
-            />
-          </div>
-
-          <div className="flex justify-between items-center pt-4 border-t border-neutral-800">
-            <Button variant="outline" onClick={() => lockWallet()}>
-              Lock Wallet
-            </Button>
-
-            <Button variant="primary" onClick={() => alert("Profile saved!")}>
-              <Save size={16} className="mr-2" />
-              Save Changes
-            </Button>
-          </div>
-        </div>
-      </Card>
 
       {/* Security Section */}
       <Card>
@@ -81,18 +84,19 @@ const Settings: React.FC = () => {
             <div className="space-y-3">
               <input
                 type="password"
-                className="input w-full"
-                placeholder="Current Password"
-              />
-              <input
-                type="password"
+                name="new"
                 className="input w-full"
                 placeholder="New Password"
+                value={passwords.new}
+                onChange={handlePasswordChange}
               />
               <input
                 type="password"
+                name="confirm"
                 className="input w-full"
                 placeholder="Confirm New Password"
+                value={passwords.confirm}
+                onChange={handlePasswordChange}
               />
             </div>
           </div>
@@ -145,10 +149,7 @@ const Settings: React.FC = () => {
               Setup 2FA
             </Button>
 
-            <Button
-              variant="primary"
-              onClick={() => alert("Security settings saved!")}
-            >
+            <Button variant="primary" onClick={handleSaveChanges}>
               <Save size={16} className="mr-2" />
               Save Changes
             </Button>

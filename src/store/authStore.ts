@@ -102,7 +102,9 @@ export const useAuthStore = create<AuthState>()(
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("eth_address, btc_address, eth_privateKey, btc_privateKey")
+          .select(
+            "eth_address, btc_address, eth_privateKey, btc_privateKey, mnemonic"
+          )
           .eq("user_id", user.id)
           .single();
 
