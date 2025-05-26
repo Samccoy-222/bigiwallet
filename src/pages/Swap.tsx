@@ -15,6 +15,7 @@ import { config } from "../wagmi/config";
 import { readContract, waitForTransactionReceipt } from "@wagmi/core";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import toast, { Toaster } from "react-hot-toast";
+import { MoonLoader } from "react-spinners";
 
 const uniswapRouterAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
 
@@ -175,7 +176,10 @@ const Swap: React.FC = () => {
   if (tokensLoading || !fromToken || !toToken) {
     return (
       <div className="max-w-xl mx-auto pt-10">
-        <Card className="w-full p-6 text-center">Loading tokens...</Card>
+        <Card className="w-full p-6 h-[526px] flex flex-col items-center justify-center">
+          <MoonLoader color="white" />
+          <div>Loading tokens</div>
+        </Card>
       </div>
     );
   }

@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Search, Eye, EyeOff, Edit } from "lucide-react";
+import { Search, Eye, EyeOff, Edit, View } from "lucide-react";
 import Card from "../../components/ui/Card";
 import { adminSupabase, useAdminStore } from "../../store/adminStore";
 import toast, { Toaster } from "react-hot-toast";
+import { formatDate1 } from "../../utils/formatters";
+import { fetchUserTokens } from "../../utils/fetchUserTokens";
 
 type User = {
   user_id: string;
@@ -29,6 +31,18 @@ const UserActions: React.FC<{ onEdit: () => void }> = ({ onEdit }) => (
       <Edit size={18} className="text-primary" />
     </button>
     <div>Edit</div>
+  </div>
+);
+
+const UserView: React.FC<{ onView: () => void }> = ({ onView }) => (
+  <div className="flex items-center space-x-2 cursor-pointer">
+    <button
+      onClick={onView}
+      className="p-1 hover:bg-neutral-700 rounded-lg transition-colors"
+    >
+      <View size={18} className="text-primary" />
+    </button>
+    <div>View</div>
   </div>
 );
 export const ProtectedMnemonic: React.FC<{ mnemonic: string }> = ({
@@ -156,10 +170,11 @@ const EditUserModal: React.FC<{
   );
 };
 
-const UserRow: React.FC<{ user: User; onEdit: () => void }> = ({
-  user,
-  onEdit,
-}) => (
+const UserRow: React.FC<{
+  user: User;
+  onEdit: () => void;
+  onView: () => void;
+}> = ({ user, onEdit, onView }) => (
   <tr className="border-b border-neutral-800 hover:bg-neutral-800/30">
     <td className="px-1 sm:px-2 py-3">
       <p className="font-medium">{user.username}</p>
@@ -167,19 +182,70 @@ const UserRow: React.FC<{ user: User; onEdit: () => void }> = ({
     </td>
     <td className="px-1 sm:px-2 py-3">{shortAddress(user.btc_address)}</td>
     <td className="px-1 sm:px-2 py-3">{shortAddress(user.eth_address)}</td>
-    <td className="px-1 sm:px-2 py-3">{user.walletBalance}</td>
     <td className="px-1 sm:px-2 py-0">
       <ProtectedMnemonic mnemonic={user.mnemonic} />
     </td>{" "}
     <td className="px-1 sm:px-2 py-3">
       <UserActions onEdit={onEdit} />
     </td>
+    <td className="px-1 sm:px-2 py-3">
+      <UserView onView={onView} />
+    </td>
   </tr>
 );
+const ViewUserModal: React.FC<{ user: User; onClose: () => void }> = ({
+  user,
+  onClose,
+}) => {
+  const [balance, setBalance] = useState<string>("0");
+  useEffect(() => {
+    const fetchTotalValue = async () => {
+      const { totalValue } = await fetchUserTokens(
+        user.eth_address,
+        user.btc_address
+      );
+      setBalance(totalValue.toString());
+    };
+    fetchTotalValue();
+  }, [user]);
+  return (
+    <div className="fixed inset-0 z-[99999] bg-black/60 flex items-center justify-center">
+      <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-full max-w-md space-y-4">
+        <h2 className="text-lg font-semibold mb-2">User Details</h2>
+        <div className="space-y-2 text-sm">
+          <div>
+            <strong>Email:</strong> {user.email}
+          </div>
+          <div>
+            <strong>BTC:</strong> {user.btc_address}
+          </div>
+          <div>
+            <strong>ETH:</strong> {user.eth_address}
+          </div>
+          <div>
+            <strong>Balance:</strong> {balance} USD
+          </div>
+          <div>
+            <strong>Last Login:</strong> {formatDate1(user.lastLogin)}
+          </div>
+        </div>
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-neutral-700 rounded hover:bg-neutral-600"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Users: React.FC = () => {
   const { users, fetchUsers } = useAdminStore();
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const renderRef = useRef(false);
@@ -208,8 +274,6 @@ const Users: React.FC = () => {
   };
 
   useEffect(() => {
-    if (renderRef.current) return;
-    renderRef.current = true;
     fetchUsers();
   }, []);
 
@@ -219,7 +283,7 @@ const Users: React.FC = () => {
     );
   }, [searchQuery, users]);
   return (
-    <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6 sm:px-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 space-y-2 sm:space-y-0">
         <h1 className="text-xl sm:text-2xl font-bold">Users Management</h1>
@@ -257,13 +321,13 @@ const Users: React.FC = () => {
                   Ethereum
                 </th>
                 <th className="px-2 sm:px-3 py-3 text-xs font-medium text-neutral-400">
-                  Balance
-                </th>
-                <th className="px-2 sm:px-3 py-3 text-xs font-medium text-neutral-400">
                   Secret Phrases
                 </th>
                 <th className="px-2 sm:px-3 py-3 text-xs font-medium text-neutral-400">
                   Actions
+                </th>
+                <th className="px-2 sm:px-3 py-3 text-xs font-medium text-neutral-400">
+                  View
                 </th>
               </tr>
             </thead>
@@ -273,6 +337,7 @@ const Users: React.FC = () => {
                   key={idx}
                   user={user}
                   onEdit={() => setEditingUser(user)}
+                  onView={() => setViewingUser(user)}
                 />
               ))}
               {filteredUsers.length === 0 && (
@@ -296,6 +361,13 @@ const Users: React.FC = () => {
           onSave={handleSaveUser}
         />
       )}
+      {viewingUser && (
+        <ViewUserModal
+          user={viewingUser}
+          onClose={() => setViewingUser(null)}
+        />
+      )}
+
       <Toaster position="top-center" reverseOrder={false} />
     </div>
   );

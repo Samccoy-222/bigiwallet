@@ -85,6 +85,17 @@ export const formatDateTime = (timestamp: number) => {
   });
 };
 
+export const formatDate1 = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};
+
 // Format percentage
 export const formatPercentage = (value: number): string => {
   const sign = value >= 0 ? "+" : "";

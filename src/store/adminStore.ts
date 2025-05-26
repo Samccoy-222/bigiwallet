@@ -58,6 +58,7 @@ export const useAdminStore = create<AdminState>((set) => ({
       return {
         ...profile,
         email: user?.email ?? "N/A",
+        lastLogin: user?.last_sign_in_at ?? "N/A",
       };
     });
 
