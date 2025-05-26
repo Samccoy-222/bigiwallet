@@ -248,7 +248,7 @@ const Users: React.FC = () => {
   const [viewingUser, setViewingUser] = useState<User | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const renderRef = useRef(false);
+  // const renderRef = useRef(false);
 
   const handleSaveUser = async (email: string, password: string) => {
     if (!editingUser) return;

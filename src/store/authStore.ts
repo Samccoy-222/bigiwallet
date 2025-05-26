@@ -28,6 +28,7 @@ interface Wallets {
 interface AuthState {
   isAuthenticated: boolean;
   user: any;
+  isAdmin: boolean;
   mnemonic: string | null;
   wallets: Wallets | null;
   justRegistered: boolean;
@@ -80,6 +81,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       isAuthenticated: false,
       user: null,
+      isAdmin: false,
       mnemonic: null,
       wallets: null,
       justRegistered: false,
@@ -87,9 +89,25 @@ export const useAuthStore = create<AuthState>()(
       initialize: async () => {
         const { data } = await supabase.auth.getSession();
         const user = data.session?.user ?? null;
-        set({ user, isAuthenticated: !!user });
-      },
 
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("user_id", user?.id)
+          .single();
+
+        if (error) {
+          console.error("Failed to fetch admin status from profiles:", error);
+        }
+
+        const isAdmin = profile?.is_admin === true;
+        console.log(profile, isAdmin);
+        set({
+          user,
+          isAuthenticated: !!user,
+          isAdmin,
+        });
+      },
       login: async (email, password) => {
         const { data: authData, error } =
           await supabase.auth.signInWithPassword({
@@ -103,7 +121,7 @@ export const useAuthStore = create<AuthState>()(
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select(
-            "eth_address, btc_address, eth_privateKey, btc_privateKey, mnemonic"
+            "eth_address, btc_address, eth_privateKey, btc_privateKey, mnemonic, is_admin"
           )
           .eq("user_id", user.id)
           .single();
@@ -127,6 +145,7 @@ export const useAuthStore = create<AuthState>()(
             },
           },
           isAuthenticated: true,
+          isAdmin: profile.is_admin,
         });
       },
 
@@ -195,6 +214,7 @@ export const useAuthStore = create<AuthState>()(
       name: "auth-store", // 🔐 localStorage key
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
+        isAdmin: state.isAdmin,
         user: state.user,
         mnemonic: state.mnemonic,
         wallets: state.wallets,

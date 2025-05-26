@@ -15,7 +15,6 @@ import { config } from "./wagmi/config";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Admin pages
-import AdminDashboard from "./pages/admin/Dashboard";
 import Users from "./pages/admin/Users";
 import Tickets from "./pages/admin/Tickets";
 import KYC from "./pages/admin/KYC";
@@ -25,7 +24,8 @@ import AdminSettings from "./pages/admin/Settings";
 const queryClient = new QueryClient();
 
 function App() {
-  const { isAuthenticated, justRegistered, initialize } = useAuthStore();
+  const { isAuthenticated, justRegistered, isAdmin, initialize } =
+    useAuthStore();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,6 +43,26 @@ function App() {
     );
   }
 
+  if (isAdmin) {
+    return (
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <Routes>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Users />} />
+              <Route path="users" element={<Users />} />
+              <Route path="tickets" element={<Tickets />} />
+              <Route path="kyc" element={<KYC />} />
+              <Route path="logs" element={<Logs />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/admin" replace />} />
+          </Routes>
+        </QueryClientProvider>
+      </WagmiProvider>
+    );
+  }
+
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
@@ -56,17 +76,6 @@ function App() {
             <Route path="swap" element={<Swap />} />
             <Route path="settings" element={<Settings />} />
           </Route>
-
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="users" element={<Users />} />
-            <Route path="tickets" element={<Tickets />} />
-            <Route path="kyc" element={<KYC />} />
-            <Route path="logs" element={<Logs />} />
-            <Route path="settings" element={<AdminSettings />} />
-          </Route>
-
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </QueryClientProvider>
