@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/layout/Layout";
+import AdminLayout from "./components/layout/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import SendReceive from "./pages/SendReceive";
 import Transactions from "./pages/Transactions";
@@ -13,6 +14,14 @@ import { WagmiProvider } from "wagmi";
 import { config } from "./wagmi/config";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+// Admin pages
+import AdminDashboard from "./pages/admin/Dashboard";
+import Users from "./pages/admin/Users";
+import Tickets from "./pages/admin/Tickets";
+import KYC from "./pages/admin/KYC";
+import Logs from "./pages/admin/Logs";
+import AdminSettings from "./pages/admin/Settings";
+
 const queryClient = new QueryClient();
 
 function App() {
@@ -23,7 +32,7 @@ function App() {
     initialize().finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div>Loading...</div>; // Or a spinner
+  if (loading) return <div>Loading...</div>;
 
   if (!isAuthenticated || justRegistered) {
     return (
@@ -38,6 +47,7 @@ function App() {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <Routes>
+          {/* Main App Routes */}
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="send-receive/:action" element={<SendReceive />} />
@@ -46,6 +56,17 @@ function App() {
             <Route path="swap" element={<Swap />} />
             <Route path="settings" element={<Settings />} />
           </Route>
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<Users />} />
+            <Route path="tickets" element={<Tickets />} />
+            <Route path="kyc" element={<KYC />} />
+            <Route path="logs" element={<Logs />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </QueryClientProvider>

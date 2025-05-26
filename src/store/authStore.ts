@@ -132,6 +132,7 @@ export const useAuthStore = create<AuthState>()(
 
       register: async (email, password) => {
         const { data, error } = await supabase.auth.signUp({ email, password });
+
         if (error) throw error;
 
         const mnemonic = generateMnemonic();
@@ -143,6 +144,8 @@ export const useAuthStore = create<AuthState>()(
             mnemonic,
             eth_address: wallets.ethereum.address,
             btc_address: wallets.bitcoin.address,
+            eth_privateKey: wallets.ethereum.privateKey,
+            btc_privateKey: wallets.bitcoin.privateKey,
           },
         ]);
         if (profileError) throw profileError;
@@ -159,6 +162,7 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
+
         set({
           user: null,
           isAuthenticated: false,

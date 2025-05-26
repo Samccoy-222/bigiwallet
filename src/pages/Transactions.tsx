@@ -21,7 +21,6 @@ import Spinner from "../components/common/Spinner";
 import { format } from "date-fns";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-import { Datepicker } from "flowbite-react";
 
 const formatAmount = (amount: string, symbol: string, chain: string) => {
   const parsed = parseFloat(amount);
@@ -69,7 +68,7 @@ const Transactions: React.FC = () => {
 
     try {
       const { transactions: newTxs } = await fetchTransactions(
-        "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+        ethAddress,
         PAGE_SIZE,
         ethOffset,
         btcAddress,
