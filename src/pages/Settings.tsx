@@ -1,75 +1,226 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Save,
-  Moon,
-  Sun,
-  Bell,
   Shield,
-  Key,
   RefreshCw,
   Eye,
   EyeOff,
+  QrCode,
+  Check,
 } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { supabase, useAuthStore } from "../store/authStore";
+import toast, { Toaster } from "react-hot-toast";
+import { MoonLoader } from "react-spinners";
 
 const Settings: React.FC = () => {
   const authStore = useAuthStore();
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [passwords, setPaasswords] = useState({
-    new: "",
-    confirm: "",
-  });
+  const [passwords, setPasswords] = useState({ new: "", confirm: "" });
   const [showRecoveryPhrase, setShowRecoveryPhrase] = useState(false);
-  const [notifications, setNotifications] = useState({
-    transactions: true,
-    marketing: false,
-    security: true,
-  });
+  const [totpUri, setTotpUri] = useState<string | null>(null);
+  const [totpVerified, setTotpVerified] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [mfaLoading, setMfaLoading] = useState(false);
 
-  // Mock recovery phrase
   const recoveryPhrase =
     authStore.mnemonic ||
     "valley alien library bread worry brother bundle hammer loyal barely dune brave";
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      setTotpVerified(data?.currentLevel === "aal2");
+    })();
+  }, []);
+
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setPaasswords((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setPasswords((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSaveChanges = async () => {
+  const handleSavePassword = async () => {
     if (passwords.new !== passwords.confirm) {
-      alert("New password and confirm password do not match.");
+      toast.error("New password and confirm password do not match.");
       return;
     }
 
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: passwords.new,
+    const { error } = await supabase.auth.updateUser({
+      password: passwords.new,
+    });
+    if (error) {
+      toast.error("Failed to update password: " + error.message);
+    } else {
+      toast.success("Password updated successfully!");
+      setPasswords({ new: "", confirm: "" });
+    }
+  };
+
+  const handleStart2FA = async () => {
+    setMfaLoading(true);
+    // Step 1: List current factors
+    const { data: factorsData, error: listError } =
+      await supabase.auth.mfa.listFactors();
+
+    if (listError) {
+      toast.error("Failed to list 2FA factors: " + listError.message);
+      return;
+    }
+
+    // Step 2: Look for existing TOTP factor
+    const existingTotp = factorsData?.all?.find(
+      (factor: any) => factor.factor_type === "totp"
+    );
+
+    // If it exists, handle accordingly
+    if (existingTotp) {
+      if (existingTotp.status === "unverified") {
+        await supabase.auth.mfa.unenroll({ factorId: existingTotp.id });
+      } else {
+        toast("TOTP 2FA is already enabled.");
+        return;
+      }
+    }
+
+    // Step 3: Enroll new TOTP factor
+    const { data: enrollData, error: enrollError } =
+      await supabase.auth.mfa.enroll({
+        factorType: "totp",
       });
 
-      if (error) {
-        console.error("Password update failed:", error.message);
-        alert("Failed to update password: " + error.message);
-      } else {
-        alert("Password updated successfully!");
-        setPaasswords({ new: "", confirm: "" });
-      }
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      alert("An unexpected error occurred.");
+    if (enrollError) {
+      toast.error("Failed to start 2FA: " + enrollError.message);
+      return;
     }
+    setMfaLoading(false);
+    setTotpUri(enrollData.totp.qr_code);
+  };
+
+  const handleVerify2FA = async () => {
+    // Step 1: Get list of factors again to find unverified one
+    const { data: factorsData, error: listError } =
+      await supabase.auth.mfa.listFactors();
+
+    if (listError) {
+      toast.error("Failed to get 2FA factors: " + listError.message);
+      return;
+    }
+
+    // Step 2: Find the unverified TOTP factor
+    const totpFactor = factorsData?.all?.find(
+      (factor: any) =>
+        factor.factor_type === "totp" && factor.status === "unverified"
+    );
+
+    if (!totpFactor || !totpFactor.id) {
+      toast.error("No unverified TOTP factor found.");
+      return;
+    }
+
+    // Step 3: Use factor_id in verify call
+    // Step 4: Create a challenge to get the challengeId
+    const { data: challengeData, error: challengeError } =
+      await supabase.auth.mfa.challenge({
+        factorId: totpFactor.id,
+      });
+
+    if (challengeError) {
+      toast.error("Failed to create challenge: " + challengeError.message);
+      return;
+    }
+
+    // Step 5: Use challengeId in the verify call
+    const { error: verifyError } = await supabase.auth.mfa.verify({
+      factorId: totpFactor.id,
+      challengeId: challengeData.id,
+      code: codeInput,
+    });
+
+    if (verifyError) {
+      toast.error("Verification failed: " + verifyError.message);
+    } else {
+      toast.success("2FA enabled successfully!");
+      setTotpVerified(true);
+      setTotpUri(null);
+      setCodeInput("");
+    }
+  };
+
+  const renderRecoveryPhrase = () =>
+    showRecoveryPhrase ? (
+      <div className="p-4 bg-neutral-800/50 rounded-lg">
+        <div className="grid grid-cols-3 gap-2">
+          {recoveryPhrase.split(" ").map((word, index) => (
+            <div key={index} className="flex items-center">
+              <span className="text-neutral-400 mr-2 text-xs">
+                {index + 1}.
+              </span>
+              <span>{word}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 text-warning text-sm">
+          Never share your recovery phrase with anyone!
+        </div>
+      </div>
+    ) : (
+      <div className="p-4 bg-neutral-800/50 rounded-lg text-center">
+        <p className="text-sm text-neutral-400">
+          Click the eye icon to reveal your recovery phrase
+        </p>
+      </div>
+    );
+
+  const render2FASection = () => {
+    if (totpVerified) {
+      return (
+        <div className="flex items-center space-x-2 text-green-500">
+          <Check size={18} />
+          <span>2FA is enabled</span>
+        </div>
+      );
+    }
+
+    if (mfaLoading) {
+      return (
+        <div className="flex justify-center items-center py-4">
+          <MoonLoader color="white" />
+        </div>
+      );
+    }
+
+    if (totpUri) {
+      return (
+        <>
+          <img src={totpUri} alt="TOTP QR" className="mb-4 mx-auto" />
+          <input
+            type="text"
+            placeholder="Enter code from app"
+            className="input w-full mb-2"
+            value={codeInput}
+            onChange={(e) => setCodeInput(e.target.value)}
+          />
+          <Button variant="primary" onClick={handleVerify2FA}>
+            <Check size={16} className="mr-2" />
+            Verify & Enable
+          </Button>
+        </>
+      );
+    }
+
+    return (
+      <Button variant="outline" onClick={handleStart2FA}>
+        <QrCode size={16} className="mr-2" />
+        Setup 2FA
+      </Button>
+    );
   };
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto pb-8">
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
 
-      {/* Security Section */}
+      {/* Security Card */}
       <Card>
         <h2 className="text-lg font-semibold mb-6 flex items-center">
           <Shield size={20} className="mr-2 text-primary" />
@@ -77,6 +228,7 @@ const Settings: React.FC = () => {
         </h2>
 
         <div className="space-y-6">
+          {/* Password Change */}
           <div>
             <label className="block text-sm font-medium text-neutral-300 mb-2">
               Change Password
@@ -101,6 +253,7 @@ const Settings: React.FC = () => {
             </div>
           </div>
 
+          {/* Recovery Phrase */}
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-sm font-medium text-neutral-300">
@@ -114,42 +267,22 @@ const Settings: React.FC = () => {
                 {showRecoveryPhrase ? <EyeOff size={16} /> : <Eye size={16} />}
               </Button>
             </div>
-            {showRecoveryPhrase ? (
-              <div className="p-4 bg-neutral-800/50 rounded-lg">
-                <div className="grid grid-cols-3 gap-2">
-                  {recoveryPhrase.split(" ").map((word, index) => (
-                    <div key={index} className="flex items-center">
-                      <span className="text-neutral-400 mr-2 text-xs">
-                        {index + 1}.
-                      </span>
-                      <span>{word}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 text-warning text-sm">
-                  Never share your recovery phrase with anyone!
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 bg-neutral-800/50 rounded-lg text-center">
-                <p className="text-sm text-neutral-400">
-                  Click the eye icon to reveal your recovery phrase
-                </p>
-              </div>
-            )}
+            {renderRecoveryPhrase()}
           </div>
 
-          <div className="flex justify-between items-center pt-4 border-t border-neutral-800">
-            <Button
-              variant="outline"
-              onClick={() => alert("2FA Setup coming soon!")}
-              className="mr-2"
-            >
-              <Key size={16} className="mr-2" />
-              Setup 2FA
-            </Button>
+          {/* 2FA Section */}
 
-            <Button variant="primary" onClick={handleSaveChanges}>
+          <div className="pt-4 border-t border-neutral-800">
+            <label className="block text-sm font-medium text-neutral-300 mb-2">
+              Two-Factor Authentication
+            </label>
+
+            {render2FASection()}
+          </div>
+
+          {/* Save Button */}
+          <div className="flex justify-end pt-4">
+            <Button variant="primary" onClick={handleSavePassword}>
               <Save size={16} className="mr-2" />
               Save Changes
             </Button>
@@ -157,150 +290,16 @@ const Settings: React.FC = () => {
         </div>
       </Card>
 
-      {/* Preferences Section */}
-      <Card>
-        <h2 className="text-lg font-semibold mb-6">Preferences</h2>
-
-        <div className="space-y-6">
-          {/* Theme Toggle */}
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="font-medium">Dark Mode</p>
-              <p className="text-sm text-neutral-400">
-                Enable dark mode for the application
-              </p>
-            </div>
-            <button
-              className={`w-12 h-6 rounded-full p-1 transition-colors ${
-                isDarkMode ? "bg-primary" : "bg-neutral-700"
-              }`}
-              onClick={() => setIsDarkMode(!isDarkMode)}
-            >
-              <div className="flex justify-between px-1 items-center h-full">
-                <Moon size={12} className="text-white" />
-                <Sun size={12} className="text-white" />
-              </div>
-              <div
-                className={`w-4 h-4 rounded-full bg-white transform transition-transform ${
-                  isDarkMode ? "translate-x-6" : "translate-x-0"
-                }`}
-                style={{ marginTop: "-16px" }}
-              ></div>
-            </button>
-          </div>
-
-          {/* Notification Toggles */}
-          <div className="space-y-4">
-            <p className="font-medium flex items-center">
-              <Bell size={16} className="mr-2 text-primary" />
-              Notifications
-            </p>
-
-            {/* Transaction Notifications */}
-            <div className="flex justify-between items-center ml-6">
-              <div>
-                <p className="text-sm">Transaction Updates</p>
-                <p className="text-xs text-neutral-400">
-                  Get notified about your transactions
-                </p>
-              </div>
-              <button
-                className={`w-10 h-5 rounded-full p-0.5 transition-colors ${
-                  notifications.transactions ? "bg-primary" : "bg-neutral-700"
-                }`}
-                onClick={() =>
-                  setNotifications({
-                    ...notifications,
-                    transactions: !notifications.transactions,
-                  })
-                }
-              >
-                <div
-                  className={`w-4 h-4 rounded-full bg-white transform transition-transform ${
-                    notifications.transactions
-                      ? "translate-x-5"
-                      : "translate-x-0"
-                  }`}
-                ></div>
-              </button>
-            </div>
-
-            {/* Marketing Notifications */}
-            <div className="flex justify-between items-center ml-6">
-              <div>
-                <p className="text-sm">Marketing</p>
-                <p className="text-xs text-neutral-400">
-                  Receive news and promotions
-                </p>
-              </div>
-              <button
-                className={`w-10 h-5 rounded-full p-0.5 transition-colors ${
-                  notifications.marketing ? "bg-primary" : "bg-neutral-700"
-                }`}
-                onClick={() =>
-                  setNotifications({
-                    ...notifications,
-                    marketing: !notifications.marketing,
-                  })
-                }
-              >
-                <div
-                  className={`w-4 h-4 rounded-full bg-white transform transition-transform ${
-                    notifications.marketing ? "translate-x-5" : "translate-x-0"
-                  }`}
-                ></div>
-              </button>
-            </div>
-
-            {/* Security Notifications */}
-            <div className="flex justify-between items-center ml-6">
-              <div>
-                <p className="text-sm">Security Alerts</p>
-                <p className="text-xs text-neutral-400">
-                  Important security notifications
-                </p>
-              </div>
-              <button
-                className={`w-10 h-5 rounded-full p-0.5 transition-colors ${
-                  notifications.security ? "bg-primary" : "bg-neutral-700"
-                }`}
-                onClick={() =>
-                  setNotifications({
-                    ...notifications,
-                    security: !notifications.security,
-                  })
-                }
-              >
-                <div
-                  className={`w-4 h-4 rounded-full bg-white transform transition-transform ${
-                    notifications.security ? "translate-x-5" : "translate-x-0"
-                  }`}
-                ></div>
-              </button>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-neutral-800">
-            <Button
-              variant="primary"
-              onClick={() => alert("Preferences saved!")}
-              fullWidth
-            >
-              <Save size={16} className="mr-2" />
-              Save Preferences
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* About */}
+      {/* About Section */}
       <Card variant="outline" className="text-center">
         <h2 className="text-lg font-medium mb-2">BigiWallet</h2>
         <p className="text-sm text-neutral-400 mb-4">Version 1.0.0</p>
         <button className="text-primary hover:text-primary-light text-sm flex items-center justify-center mx-auto">
-          <RefreshCw size={14} className="mr-1" /> Check for updates
+          <RefreshCw size={14} className="mr-1" />
+          Check for updates
         </button>
       </Card>
+      <Toaster position="top-center" reverseOrder={false} />
     </div>
   );
 };

@@ -48,6 +48,8 @@
     "react-qr-reader": "^3.0.0-beta-1",
     "react-router-dom": "^6.22.3",
     "react-select": "^5.10.1",
+    "react-spinner": "^0.2.7",
+    "react-spinners": "^0.17.0",
     "recharts": "^2.12.2",
     "tailwind-merge": "^2.2.1",
     "tiny-secp256k1": "^2.2.3",

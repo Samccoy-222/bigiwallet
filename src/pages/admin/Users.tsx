@@ -1,66 +1,211 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Search, MoreVertical, Shield, Ban, Mail } from "lucide-react";
+import { Search, Eye, EyeOff, Edit } from "lucide-react";
 import Card from "../../components/ui/Card";
-import { useAdminStore } from "../../store/adminStore";
+import { adminSupabase, useAdminStore } from "../../store/adminStore";
+import toast, { Toaster } from "react-hot-toast";
 
 type User = {
-  id: string;
+  user_id: string;
   email: string;
   username: string;
-  kycStatus: "verified" | "pending";
+  btc_address: string;
+  eth_address: string;
+  mnemonic: string;
   walletBalance: string;
   lastLogin: string;
 };
 
-const UserActions = () => (
-  <div className="flex items-center space-x-2">
-    <button className="p-1 hover:bg-neutral-700 rounded-lg transition-colors">
-      <Shield size={18} className="text-primary" />
+const shortAddress = (address: string) => {
+  if (!address) return "N/A";
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
+const UserActions: React.FC<{ onEdit: () => void }> = ({ onEdit }) => (
+  <div className="flex items-center space-x-2 cursor-pointer">
+    <button
+      onClick={onEdit}
+      className="p-1 hover:bg-neutral-700 rounded-lg transition-colors"
+    >
+      <Edit size={18} className="text-primary" />
     </button>
-    <button className="p-1 hover:bg-neutral-700 rounded-lg transition-colors">
-      <Ban size={18} className="text-error" />
-    </button>
-    <button className="p-1 hover:bg-neutral-700 rounded-lg transition-colors">
-      <Mail size={18} className="text-neutral-400" />
-    </button>
-    <button className="p-1 hover:bg-neutral-700 rounded-lg transition-colors">
-      <MoreVertical size={18} className="text-neutral-400" />
-    </button>
+    <div>Edit</div>
   </div>
 );
+export const ProtectedMnemonic: React.FC<{ mnemonic: string }> = ({
+  mnemonic,
+}) => {
+  const [revealed, setRevealed] = useState(false);
+  const popupRef = useRef<HTMLDivElement>(null);
 
-const UserRow: React.FC<{ user: User }> = ({ user }) => (
+  // Close popup on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        popupRef.current &&
+        !popupRef.current.contains(event.target as Node)
+      ) {
+        setRevealed(false);
+      }
+    };
+    if (revealed) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [revealed]);
+
+  return (
+    <div className="relative text-xs max-w-[10rem]">
+      <div className="flex items-center gap-2">
+        <span className="tracking-widest text-neutral-400">•••• •••• ••••</span>
+        {!revealed ? (
+          <button onClick={() => setRevealed(true)} className="hover:underline">
+            <Eye size={16} className="inline-block" />
+          </button>
+        ) : (
+          <button
+            onClick={() => setRevealed(false)}
+            className="text-neutral-400 hover:text-white"
+          >
+            <EyeOff size={16} />
+          </button>
+        )}
+      </div>
+
+      {revealed && (
+        <div
+          ref={popupRef}
+          className="absolute bottom-full mb-[-2px] left-[-30px] z-[9999] w-64 bg-neutral-900 text-neutral-100 border border-neutral-700 rounded-md shadow-xl p-3"
+        >
+          <div className="flex justify-between items-start">
+            <p className="text-xs whitespace-pre-wrap break-words leading-snug">
+              {mnemonic}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const EditUserModal: React.FC<{
+  user: User;
+  onClose: () => void;
+  onSave: (email: string, password: string) => void;
+}> = ({ user, onClose, onSave }) => {
+  const [email, setEmail] = useState(user.email);
+  const [password, setPassword] = useState("");
+
+  const generateTempPassword = () => {
+    const temp = import.meta.env.VITE_TEMP_PASSWORD;
+    setPassword(temp);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[99999] bg-black/60 flex items-center justify-center">
+      <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-full max-w-md space-y-4">
+        <h2 className="text-lg font-semibold mb-2">Edit User</h2>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-sm text-neutral-300">Email</label>
+            <input
+              className="input w-full mt-1"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="text-sm text-neutral-300">Password</label>
+            <input
+              className="input w-full mt-1"
+              type="text"
+              value={password}
+              placeholder="Leave blank to keep current"
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          <div className="flex justify-between gap-2">
+            <button
+              className="text-xs text-blue-400 hover:underline"
+              onClick={generateTempPassword}
+            >
+              Generate Temp Password
+            </button>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 mt-4">
+          <button
+            className="px-4 py-2 rounded bg-neutral-700 hover:bg-neutral-600"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            className="px-4 py-2 rounded bg-primary text-white hover:bg-primary/90"
+            onClick={() => onSave(email, password)}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const UserRow: React.FC<{ user: User; onEdit: () => void }> = ({
+  user,
+  onEdit,
+}) => (
   <tr className="border-b border-neutral-800 hover:bg-neutral-800/30">
-    <td className="px-4 sm:px-6 py-3">
+    <td className="px-1 sm:px-2 py-3">
       <p className="font-medium">{user.username}</p>
       <p className="text-xs text-neutral-400">{user.email}</p>
     </td>
-    <td className="px-4 sm:px-6 py-3">
-      <span
-        className={`px-2 py-1 text-xs rounded-full ${
-          user.kycStatus === "verified" || true
-            ? "bg-success/20 text-success"
-            : "bg-warning/20 text-warning"
-        }`}
-      >
-        {user.kycStatus || "verified"}
-      </span>
-    </td>
-    <td className="px-4 sm:px-6 py-3">{user.walletBalance}</td>
-    <td className="px-4 sm:px-6 py-3 text-xs text-neutral-400">
-      {user.lastLogin}
-    </td>
-    <td className="px-4 sm:px-6 py-3">
-      <UserActions />
+    <td className="px-1 sm:px-2 py-3">{shortAddress(user.btc_address)}</td>
+    <td className="px-1 sm:px-2 py-3">{shortAddress(user.eth_address)}</td>
+    <td className="px-1 sm:px-2 py-3">{user.walletBalance}</td>
+    <td className="px-1 sm:px-2 py-0">
+      <ProtectedMnemonic mnemonic={user.mnemonic} />
+    </td>{" "}
+    <td className="px-1 sm:px-2 py-3">
+      <UserActions onEdit={onEdit} />
     </td>
   </tr>
 );
 
 const Users: React.FC = () => {
   const { users, fetchUsers } = useAdminStore();
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const renderRef = useRef(false);
+
+  const handleSaveUser = async (email: string, password: string) => {
+    if (!editingUser) return;
+
+    try {
+      const { error } = await adminSupabase.auth.admin.updateUserById(
+        editingUser.user_id,
+        {
+          email: email,
+          password: password || undefined, // Only update password if provided
+        }
+      );
+      if (error) {
+        console.error("Failed to update user:", error.message);
+      } else {
+        toast.success("User updated successfully!");
+        fetchUsers();
+        setEditingUser(null); // Close modal
+      }
+    } catch (error) {
+      console.error("Unexpected error:", error);
+    }
+  };
 
   useEffect(() => {
     if (renderRef.current) return;
@@ -72,7 +217,7 @@ const Users: React.FC = () => {
     return users.filter((user) =>
       user.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
+  }, [searchQuery, users]);
   return (
     <div className="p-4 sm:p-6">
       {/* Header */}
@@ -97,31 +242,38 @@ const Users: React.FC = () => {
       </div>
 
       {/* User Table */}
-      <Card className="p-0">
+      <Card className="p-2">
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
+          <table className="w-full text-sm min-w-[700px]">
             <thead>
               <tr className="text-left border-b border-neutral-800">
-                <th className="px-4 sm:px-6 py-3 text-xs font-medium text-neutral-400">
+                <th className="px-2 sm:px-3 py-3 text-xs font-medium text-neutral-400">
                   User
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-xs font-medium text-neutral-400">
-                  KYC
+                <th className="px-2 sm:px-3 py-3 text-xs font-medium text-neutral-400">
+                  Bitcoin
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-xs font-medium text-neutral-400">
+                <th className="px-2 sm:px-3 py-3 text-xs font-medium text-neutral-400">
+                  Ethereum
+                </th>
+                <th className="px-2 sm:px-3 py-3 text-xs font-medium text-neutral-400">
                   Balance
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-xs font-medium text-neutral-400">
-                  Last Login
+                <th className="px-2 sm:px-3 py-3 text-xs font-medium text-neutral-400">
+                  Secret Phrases
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-xs font-medium text-neutral-400">
+                <th className="px-2 sm:px-3 py-3 text-xs font-medium text-neutral-400">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
-                <UserRow key={user.id} user={user} />
+              {filteredUsers.map((user, idx) => (
+                <UserRow
+                  key={idx}
+                  user={user}
+                  onEdit={() => setEditingUser(user)}
+                />
               ))}
               {filteredUsers.length === 0 && (
                 <tr>
@@ -137,6 +289,14 @@ const Users: React.FC = () => {
           </table>
         </div>
       </Card>
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSave={handleSaveUser}
+        />
+      )}
+      <Toaster position="top-center" reverseOrder={false} />
     </div>
   );
 };

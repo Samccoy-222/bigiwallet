@@ -70,27 +70,6 @@ const Swap: React.FC = () => {
     loadBalance();
   }, [fromToken]);
 
-  const calculatePrice = async (amount: string, from: any, to: any) => {
-    if (!amount || !from || !to) return;
-
-    try {
-      const fromPrice = from.price;
-      const toPrice = to.price;
-      const ratio = toPrice / fromPrice;
-      const calculatedAmount = parseFloat(amount) * ratio;
-
-      setToAmount(calculatedAmount.toFixed(6));
-    } catch (error) {
-      console.error("Price calculation error:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (fromAmount && fromToken && toToken) {
-      calculatePrice(fromAmount, fromToken, toToken);
-    }
-  }, [fromAmount, fromToken, toToken]);
-
   const handleSwap = async () => {
     setLoading(true);
     try {

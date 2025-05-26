@@ -22,7 +22,7 @@ interface AdminState {
   resetUserPassword: (userId: string) => Promise<void>;
 }
 
-const supabase = createClient(
+export const adminSupabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SERVICE_ROLE_KEY
 );
@@ -35,7 +35,7 @@ export const useAdminStore = create<AdminState>((set) => ({
 
   fetchUsers: async () => {
     // 1. Fetch from your "profiles" table
-    const { data: profiles, error: profileError } = await supabase
+    const { data: profiles, error: profileError } = await adminSupabase
       .from("profiles")
       .select("user_id, eth_address, btc_address, mnemonic");
 
@@ -43,7 +43,7 @@ export const useAdminStore = create<AdminState>((set) => ({
 
     // 2. Use admin API to fetch all users (server-side only!)
     const { data: usersData, error: usersError } =
-      await supabase.auth.admin.listUsers({
+      await adminSupabase.auth.admin.listUsers({
         page: 1,
         perPage: 1000,
       });
@@ -64,7 +64,7 @@ export const useAdminStore = create<AdminState>((set) => ({
     set({ users: enriched });
   },
   fetchTickets: async () => {
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from("support_tickets")
       .select(
         `
@@ -80,7 +80,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   fetchKYCRequests: async () => {
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from("kyc_verifications")
       .select(
         `
@@ -95,7 +95,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   fetchAdminLogs: async () => {
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from("admin_actions")
       .select(
         `
@@ -111,7 +111,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   updateUserStatus: async (userId: string, isBlocked: boolean) => {
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from("user_profiles")
       .update({ is_blocked: isBlocked })
       .eq("user_id", userId);
@@ -119,8 +119,8 @@ export const useAdminStore = create<AdminState>((set) => ({
     if (error) throw error;
 
     // Log the action
-    await supabase.from("admin_actions").insert({
-      admin_id: (await supabase.auth.getUser()).data.user?.id,
+    await adminSupabase.from("admin_actions").insert({
+      admin_id: (await adminSupabase.auth.getUser()).data.user?.id,
       action_type: isBlocked ? "block_user" : "unblock_user",
       target_user_id: userId,
       details: {
@@ -132,13 +132,13 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   updateKYCStatus: async (kycId: string, status: string, notes: string) => {
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from("kyc_verifications")
       .update({
         status,
         notes,
         verified_at: new Date().toISOString(),
-        verified_by: (await supabase.auth.getUser()).data.user?.id,
+        verified_by: (await adminSupabase.auth.getUser()).data.user?.id,
       })
       .eq("id", kycId);
 
@@ -146,7 +146,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   updateTicketStatus: async (ticketId: string, status: string) => {
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from("support_tickets")
       .update({
         status,
@@ -158,9 +158,9 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   addTicketMessage: async (ticketId: string, message: string) => {
-    const { error } = await supabase.from("ticket_messages").insert({
+    const { error } = await adminSupabase.from("ticket_messages").insert({
       ticket_id: ticketId,
-      sender_id: (await supabase.auth.getUser()).data.user?.id,
+      sender_id: (await adminSupabase.auth.getUser()).data.user?.id,
       message,
     });
 
@@ -168,15 +168,15 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   updateUserEmail: async (userId: string, newEmail: string) => {
-    const { error } = await supabase.auth.admin.updateUserById(userId, {
+    const { error } = await adminSupabase.auth.admin.updateUserById(userId, {
       email: newEmail,
     });
 
     if (error) throw error;
 
     // Log the action
-    await supabase.from("admin_actions").insert({
-      admin_id: (await supabase.auth.getUser()).data.user?.id,
+    await adminSupabase.from("admin_actions").insert({
+      admin_id: (await adminSupabase.auth.getUser()).data.user?.id,
       action_type: "update_email",
       target_user_id: userId,
       details: { new_email: newEmail },
@@ -184,7 +184,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   resetUserPassword: async (userId: string) => {
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await adminSupabase
       .from("users") // replace with your actual users table name if different
       .select("email")
       .eq("id", userId)
@@ -195,7 +195,7 @@ export const useAdminStore = create<AdminState>((set) => ({
     }
 
     // Generate a recovery link
-    const { error } = await supabase.auth.admin.generateLink({
+    const { error } = await adminSupabase.auth.admin.generateLink({
       type: "recovery",
       email: user.email,
     });
@@ -203,8 +203,8 @@ export const useAdminStore = create<AdminState>((set) => ({
     if (error) throw error;
 
     // Log the action
-    await supabase.from("admin_actions").insert({
-      admin_id: (await supabase.auth.getUser()).data.user?.id,
+    await adminSupabase.from("admin_actions").insert({
+      admin_id: (await adminSupabase.auth.getUser()).data.user?.id,
       action_type: "reset_password",
       target_user_id: userId,
     });
