@@ -7,6 +7,7 @@ import { fetchUserTokens } from "../../utils/fetchUserTokens";
 import { formatCurrency, formatCrypto } from "../../utils/formatters";
 import { usePriceChart } from "../../context/PriceChartContext";
 import { useWalletStore } from "../../store/walletStore";
+import TokenIcon from "../ui/TokenIcon";
 
 type SortBy = "name" | "quantity" | "value";
 type SortOrder = "asc" | "desc";
@@ -92,7 +93,7 @@ const TokenList: React.FC = () => {
         />
       </div>
 
-      <table className="w-full text-sm text-left">
+      <table className="w-full text-sm text-left max-h-[400px] overflow-auto">
         <thead className=" text-neutral-500">
           <tr>
             <th
@@ -131,10 +132,10 @@ const TokenList: React.FC = () => {
                 className="hover:bg-neutral-800/50 cursor-pointer transition-all duration-200"
               >
                 <td className="px-3 py-3 flex items-center space-x-3">
-                  <img
-                    src={`/SVG/${token.symbol.toLowerCase()}.svg`}
-                    alt={token.symbol}
-                    className="w-6 h-6 rounded-full bg-white object-contain"
+                  <TokenIcon
+                    symbol={token.symbol}
+                    logo={token.logo}
+                    size="sm"
                   />
                   <div>
                     <p className="font-medium">{token.symbol}</p>
