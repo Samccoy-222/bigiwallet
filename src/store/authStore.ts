@@ -171,6 +171,15 @@ export const useAuthStore = create<AuthState>()(
           },
         ]);
         if (profileError) throw profileError;
+        const { error: emailError } = await supabase.functions.invoke(
+          "send-welcome-email",
+          {
+            body: JSON.stringify({
+              email,
+            }),
+          }
+        );
+        if (emailError) throw error;
 
         set({
           user: data.user,
