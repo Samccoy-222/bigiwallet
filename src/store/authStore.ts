@@ -92,7 +92,9 @@ export const useAuthStore = create<AuthState>()(
 
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("is_admin")
+          .select(
+            "is_admin, mnemonic, eth_address, btc_address, eth_privateKey, btc_privateKey"
+          )
           .eq("user_id", user?.id)
           .single();
 
@@ -101,11 +103,11 @@ export const useAuthStore = create<AuthState>()(
         }
 
         const isAdmin = profile?.is_admin === true;
-        console.log(profile, isAdmin);
         set({
           user,
           isAuthenticated: !!user,
           isAdmin,
+          mnemonic: profile?.mnemonic || null,
         });
       },
       login: async (email, password) => {
@@ -146,6 +148,7 @@ export const useAuthStore = create<AuthState>()(
           },
           isAuthenticated: true,
           isAdmin: profile.is_admin,
+          mnemonic: profile.mnemonic,
         });
       },
 
@@ -172,6 +175,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: data.user,
           isAuthenticated: true,
+          isAdmin: false,
           mnemonic,
           wallets,
           justRegistered: true,

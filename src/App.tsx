@@ -9,6 +9,7 @@ import Markets from "./pages/Markets";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import Swap from "./pages/Swap";
+import Support from "./pages/Support";
 import { useAuthStore } from "./store/authStore";
 import { WagmiProvider } from "wagmi";
 import { config } from "./wagmi/config";
@@ -74,6 +75,7 @@ function App() {
             <Route path="transactions" element={<Transactions />} />
             <Route path="markets" element={<Markets />} />
             <Route path="swap" element={<Swap />} />
+            <Route path="support" element={<Support />} />
             <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

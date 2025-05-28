@@ -1,3 +1,4 @@
+import QRCode from "qrcode";
 import React, { useState, useEffect } from "react";
 import {
   Save,
@@ -13,6 +14,22 @@ import Button from "../components/ui/Button";
 import { supabase, useAuthStore } from "../store/authStore";
 import toast, { Toaster } from "react-hot-toast";
 import { MoonLoader } from "react-spinners";
+
+export const TotpQr = ({ uri }: { uri: string }) => {
+  const [qrSvg, setQrSvg] = useState<string>("");
+
+  useEffect(() => {
+    if (!uri) return;
+    QRCode.toString(uri, { type: "svg" }).then(setQrSvg);
+  }, [uri]);
+
+  return (
+    <div
+      className="w-[200px] h-[200px] mx-auto mb-4"
+      dangerouslySetInnerHTML={{ __html: qrSvg }}
+    />
+  );
+};
 
 const Settings: React.FC = () => {
   const authStore = useAuthStore();
@@ -93,7 +110,7 @@ const Settings: React.FC = () => {
       return;
     }
     setMfaLoading(false);
-    setTotpUri(enrollData.totp.qr_code);
+    setTotpUri(enrollData.totp.uri);
   };
 
   const handleVerify2FA = async () => {
@@ -188,11 +205,10 @@ const Settings: React.FC = () => {
         </div>
       );
     }
-
     if (totpUri) {
       return (
         <>
-          <img src={totpUri} alt="TOTP QR" className="mb-4 mx-auto" />
+          <TotpQr uri={totpUri} />
           <input
             type="text"
             placeholder="Enter code from app"

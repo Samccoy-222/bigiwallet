@@ -82,7 +82,7 @@ export async function fetchTransactions(
           amount: tx.amount,
           timestamp: tx.timestamp,
           tokenAddress: tx.tokenAddress,
-          symbol: tx.symbol,
+          symbol: tx.symbol ?? "ETH",
           tokenName: tx.tokenName,
           counterAddress: tx.counterAddress,
           status: tx.blockNumber ? "confirmed" : "pending",

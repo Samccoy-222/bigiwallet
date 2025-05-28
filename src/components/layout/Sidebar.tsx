@@ -6,6 +6,7 @@ import {
   History as ListHistory,
   Settings,
   Repeat,
+  MessageSquare,
 } from "lucide-react";
 
 const Sidebar: React.FC = () => {
@@ -32,6 +33,11 @@ const Sidebar: React.FC = () => {
           to="/transactions"
           icon={<ListHistory size={20} />}
           label="Transactions"
+        />
+        <NavItem
+          to="/support"
+          icon={<MessageSquare size={20} />}
+          label="Support"
         />
       </nav>
 

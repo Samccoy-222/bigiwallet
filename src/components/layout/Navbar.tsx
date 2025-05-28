@@ -3,11 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Menu, LogOut } from "lucide-react";
 import Button from "../ui/Button";
 import { useAuthStore } from "../../store/authStore";
+import { useTicketStore } from "../../store/ticketStore";
 
 const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuthStore();
+  const { resetTicket } = useTicketStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const getPageTitle = () => {
@@ -49,7 +51,14 @@ const Navbar: React.FC = () => {
           {/* Right Side Navigation */}
           <div className="flex items-center space-x-1 md:space-x-3">
             {/* Lock Wallet Button */}
-            <Button variant="outline" size="sm" onClick={() => logout()}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                resetTicket();
+                logout();
+              }}
+            >
               <LogOut size={16} className="mr-1" />
               <span className="hidden sm:inline">Logout</span>
             </Button>
@@ -85,7 +94,7 @@ const Navbar: React.FC = () => {
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                navigate("/send-receive");
+                navigate("/send-receive/send");
                 setIsMobileMenuOpen(false);
               }}
             >
@@ -120,6 +129,21 @@ const Navbar: React.FC = () => {
               }}
             >
               Transactions
+            </a>
+            <a
+              className={`p-2 rounded-lg ${
+                location.pathname === "/transactions"
+                  ? "bg-primary/20 text-primary"
+                  : "text-neutral-300"
+              }`}
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/support");
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              Support
             </a>
             <a
               className={`p-2 rounded-lg ${
