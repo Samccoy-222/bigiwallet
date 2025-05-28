@@ -23,7 +23,7 @@ export const formatCrypto = (
 
   const shortSymbol = symbol?.startsWith("0x")
     ? `${symbol.slice(0, 6)}...${symbol.slice(-4)}`
-    : symbol;
+    : symbol ?? "ETH";
 
   return `${formattedAmount} ${shortSymbol}`;
 };

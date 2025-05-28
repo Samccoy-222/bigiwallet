@@ -81,7 +81,7 @@ export async function fetchTransactions(
           transactionSubtype: tx.transactionSubtype,
           amount: tx.amount,
           timestamp: tx.timestamp,
-          tokenAddress: tx.tokenAddress,
+          tokenAddress: tx.tokenAddress ?? ethAddress,
           symbol: tx.symbol ?? "ETH",
           tokenName: tx.tokenName,
           counterAddress: tx.counterAddress,
