@@ -5,7 +5,7 @@ import { Send } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 
 const TicketChat: React.FC = () => {
-  const { selectedTicket, tickets, messages, fetchMessages, sendMessage } =
+  const { selectedTicket, messages, fetchMessages, sendMessage } =
     useTicketStore();
   const { user } = useAuthStore();
   const [newMessage, setNewMessage] = useState("");
@@ -29,21 +29,13 @@ const TicketChat: React.FC = () => {
     setNewMessage("");
   };
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex items-center justify-center py-8">
-  //       <Loader className="animate-spin text-primary\" size={24} />
-  //     </div>
-  //   );
-  // }
-  if (!selectedTicket || tickets.length === 0) {
+  if (!selectedTicket) {
     return (
       <div className="h-full flex items-center justify-center text-neutral-400">
         Select a ticket to view the conversation
       </div>
     );
   }
-
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -61,7 +53,7 @@ const TicketChat: React.FC = () => {
                 className={`max-w-[70%] rounded-lg p-3 ${
                   isCurrentUser
                     ? "bg-primary text-white"
-                    : "bg-neutral-800 text-neutral-100"
+                    : "bg-neutral-700 text-neutral-100"
                 }`}
               >
                 <p className="text-sm">{message.message}</p>

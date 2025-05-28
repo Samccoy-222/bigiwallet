@@ -1,48 +1,58 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Ticket, AlertTriangle, Activity } from "lucide-react";
+import { Users, Ticket } from "lucide-react";
 import Card from "../../components/ui/Card";
+import { useAdminStore } from "../../store/adminStore";
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-
+  const { tickets, userState, ticketState, fetchUsers, fetchTickets } =
+    useAdminStore();
   const stats = [
     {
       title: "Total Users",
-      value: "1,234",
-      change: "+12%",
+      value: userState?.value.toString() ?? 0,
+      change: `+${userState?.change.toFixed(2) ?? 0}`,
       icon: Users,
       path: "/admin/users",
     },
     {
       title: "Open Tickets",
-      value: "23",
-      change: "-5%",
+      value: ticketState?.value.toString() ?? 0,
+      change: `+${ticketState?.change.toFixed(2) ?? 0}`,
       icon: Ticket,
       path: "/admin/tickets",
     },
-    {
-      title: "Pending KYC",
-      value: "45",
-      change: "+8%",
-      icon: AlertTriangle,
-      path: "/admin/kyc",
-    },
-    {
-      title: "Active Sessions",
-      value: "892",
-      change: "+3%",
-      icon: Activity,
-      path: "/admin/activity",
-    },
   ];
+  const shortAddress = (address: string) => {
+    if (!address) return "N/A";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const getPriorityClass = (priority: string) => {
+    switch (priority) {
+      case "urgent":
+        return "bg-error/20 text-error";
+      case "high":
+        return "bg-warning/20 text-warning";
+      case "medium":
+        return "bg-primary/20 text-primary";
+      default:
+        return "bg-success/20 text-success";
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchTickets();
+  }, []);
 
   return (
     <div className="p-2 py-4 md:p-6">
       <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -73,21 +83,27 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1  gap-6">
         <Card>
           <h2 className="text-lg font-semibold mb-4">Recent Support Tickets</h2>
           <div className="space-y-4">
-            {[1, 2, 3].map((_, i) => (
+            {tickets.slice(0, 3).map((ticket, idx) => (
               <div
-                key={i}
+                key={idx}
                 className="flex items-center justify-between py-2 border-b border-neutral-800"
               >
                 <div>
-                  <p className="font-medium">Wallet Connection Issue</p>
-                  <p className="text-sm text-neutral-400">User ID: #1234</p>
+                  <p className="font-medium">{ticket.subject}</p>
+                  <p className="text-sm text-neutral-400">
+                    User ID: {shortAddress(ticket.user_id)}
+                  </p>
                 </div>
-                <span className="px-2 py-1 text-xs rounded-full bg-warning/20 text-warning">
-                  High Priority
+                <span
+                  className={`px-2 py-1 text-xs rounded-full ${getPriorityClass(
+                    ticket.priority
+                  )}`}
+                >
+                  {ticket.priority}
                 </span>
               </div>
             ))}
@@ -97,30 +113,6 @@ const AdminDashboard: React.FC = () => {
             onClick={() => navigate("/admin/tickets")}
           >
             View All Tickets
-          </button>
-        </Card>
-
-        <Card>
-          <h2 className="text-lg font-semibold mb-4">Recent Admin Actions</h2>
-          <div className="space-y-4">
-            {[1, 2, 3].map((_, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between py-2 border-b border-neutral-800"
-              >
-                <div>
-                  <p className="font-medium">User Account Updated</p>
-                  <p className="text-sm text-neutral-400">Admin: John Doe</p>
-                </div>
-                <span className="text-sm text-neutral-400">2 hours ago</span>
-              </div>
-            ))}
-          </div>
-          <button
-            className="mt-4 text-primary hover:text-primary-light text-sm"
-            onClick={() => navigate("/admin/logs")}
-          >
-            View All Actions
           </button>
         </Card>
       </div>

@@ -1,9 +1,17 @@
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
+import { supabase } from "./authStore";
+
+interface state {
+  value: number;
+  change: number;
+}
 
 interface AdminState {
   users: any[];
+  userState?: state;
   tickets: any[];
+  ticketState?: state;
   kycRequests: any[];
   adminLogs: any[];
   fetchUsers: () => Promise<void>;
@@ -32,12 +40,14 @@ export const useAdminStore = create<AdminState>((set) => ({
   tickets: [],
   kycRequests: [],
   adminLogs: [],
+  adminState: undefined,
+  ticketState: undefined,
 
   fetchUsers: async () => {
     // 1. Fetch from your "profiles" table
     const { data: profiles, error: profileError } = await adminSupabase
       .from("profiles")
-      .select("user_id, eth_address, btc_address, mnemonic");
+      .select("user_id, eth_address, btc_address, mnemonic, created_at");
 
     if (profileError) throw profileError;
 
@@ -62,22 +72,48 @@ export const useAdminStore = create<AdminState>((set) => ({
       };
     });
 
-    set({ users: enriched });
+    const count = users.length;
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const usersCreatedLastWeek = users.filter((user) => {
+      return user.created_at && new Date(user.created_at) > oneWeekAgo;
+    }).length;
+
+    set({
+      users: enriched,
+      userState: {
+        value: count,
+        change: count > 0 ? (usersCreatedLastWeek / count) * 100 : 0,
+      },
+    });
   },
   fetchTickets: async () => {
-    const { data, error } = await adminSupabase
-      .from("support_tickets")
-      .select(
-        `
-        *,
-        user:user_id(email),
-        messages:ticket_messages(*)
-      `
-      )
+    const { data, error } = await supabase
+      .from("tickets")
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    set({ tickets: data });
+    const count = data.filter((ticket) => {
+      return ticket.status === "open";
+    }).length;
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const usersCreatedLastWeek = data.filter((ticket) => {
+      return (
+        ticket.status === "open" &&
+        ticket.created_at &&
+        new Date(ticket.created_at) > oneWeekAgo
+      );
+    }).length;
+
+    set({
+      tickets: data,
+      ticketState: {
+        value: count,
+        change: count > 0 ? (usersCreatedLastWeek / count) * 100 : 0,
+      },
+    });
   },
 
   fetchKYCRequests: async () => {

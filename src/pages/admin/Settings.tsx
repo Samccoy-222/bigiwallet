@@ -1,147 +1,85 @@
 import React, { useState } from "react";
-import { Save, Shield, Mail, Bell } from "lucide-react";
+import { Save, RefreshCw, Shield, Bell } from "lucide-react";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import toast from "react-hot-toast";
+import { supabase } from "../../store/authStore";
 
 const Settings: React.FC = () => {
-  const [emailSettings, setEmailSettings] = useState({
-    supportEmail: "support@example.com",
-    notificationEmail: "notifications@example.com",
-  });
-
-  const [securitySettings, setSecuritySettings] = useState({
-    requireTwoFactor: true,
-    sessionTimeout: 30,
-    maxLoginAttempts: 5,
-  });
+  const [passwords, setPasswords] = useState({ new: "", confirm: "" });
 
   const [notificationSettings, setNotificationSettings] = useState({
     newUsers: true,
-    kycRequests: true,
     supportTickets: true,
-    securityAlerts: true,
   });
 
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswords((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleSavePassword = async () => {
+    if (passwords.new !== passwords.confirm) {
+      toast.error("New password and confirm password do not match.");
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: passwords.new,
+    });
+    if (error) {
+      toast.error("Failed to update password: " + error.message);
+    } else {
+      toast.success("Password updated successfully!");
+      setPasswords({ new: "", confirm: "" });
+    }
+  };
   return (
     <div className="space-y-6 p-6">
       <h1 className="text-2xl font-bold">Admin Settings</h1>
 
-      {/* Email Settings */}
       <Card>
+        <h2 className="text-lg font-semibold mb-6 flex items-center">
+          <Shield size={20} className="mr-2 text-primary" />
+          Security
+        </h2>
+
         <div className="space-y-6">
-          <div className="flex items-center space-x-2">
-            <Mail className="text-primary" size={24} />
-            <h2 className="text-lg font-semibold">Email Settings</h2>
+          {/* Password Change */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-300 mb-2">
+              Change Password
+            </label>
+            <div className="space-y-3">
+              <input
+                type="password"
+                name="new"
+                className="input w-full"
+                placeholder="New Password"
+                value={passwords.new}
+                onChange={handlePasswordChange}
+              />
+              <input
+                type="password"
+                name="confirm"
+                className="input w-full"
+                placeholder="Confirm New Password"
+                value={passwords.confirm}
+                onChange={handlePasswordChange}
+              />
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">
-                Support Email Address
-              </label>
-              <input
-                type="email"
-                className="input w-full"
-                value={emailSettings.supportEmail}
-                onChange={(e) =>
-                  setEmailSettings((prev) => ({
-                    ...prev,
-                    supportEmail: e.target.value,
-                  }))
-                }
-              />
-            </div>
+          {/* Recovery Phrase */}
 
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">
-                Notification Email Address
-              </label>
-              <input
-                type="email"
-                className="input w-full"
-                value={emailSettings.notificationEmail}
-                onChange={(e) =>
-                  setEmailSettings((prev) => ({
-                    ...prev,
-                    notificationEmail: e.target.value,
-                  }))
-                }
-              />
-            </div>
+          {/* Save Button */}
+          <div className="flex justify-end pt-4">
+            <Button variant="primary" onClick={handleSavePassword}>
+              <Save size={16} className="mr-2" />
+              Save Changes
+            </Button>
           </div>
         </div>
       </Card>
-
-      {/* Security Settings */}
-      <Card>
-        <div className="space-y-6">
-          <div className="flex items-center space-x-2">
-            <Shield className="text-primary" size={24} />
-            <h2 className="text-lg font-semibold">Security Settings</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Require Two-Factor Authentication</p>
-                <p className="text-sm text-neutral-400">
-                  Enforce 2FA for all admin accounts
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={securitySettings.requireTwoFactor}
-                  onChange={(e) =>
-                    setSecuritySettings((prev) => ({
-                      ...prev,
-                      requireTwoFactor: e.target.checked,
-                    }))
-                  }
-                />
-                <div className="w-11 h-6 bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-              </label>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">
-                Session Timeout (minutes)
-              </label>
-              <input
-                type="number"
-                className="input w-full"
-                value={securitySettings.sessionTimeout}
-                onChange={(e) =>
-                  setSecuritySettings((prev) => ({
-                    ...prev,
-                    sessionTimeout: parseInt(e.target.value),
-                  }))
-                }
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">
-                Maximum Login Attempts
-              </label>
-              <input
-                type="number"
-                className="input w-full"
-                value={securitySettings.maxLoginAttempts}
-                onChange={(e) =>
-                  setSecuritySettings((prev) => ({
-                    ...prev,
-                    maxLoginAttempts: parseInt(e.target.value),
-                  }))
-                }
-              />
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Notification Settings */}
       <Card>
         <div className="space-y-6">
           <div className="flex items-center space-x-2">
@@ -159,7 +97,10 @@ const Settings: React.FC = () => {
                       .replace(/^./, (str) => str.toUpperCase())}
                   </p>
                   <p className="text-sm text-neutral-400">
-                    Receive notifications for {key.toLowerCase()}
+                    Receive notifications for{" "}
+                    {key
+                      .replace(/([A-Z])/g, " $1")
+                      .replace(/^./, (str) => str.toLowerCase())}
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -182,13 +123,14 @@ const Settings: React.FC = () => {
         </div>
       </Card>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button variant="primary" className="flex items-center">
-          <Save size={18} className="mr-2" />
-          Save Settings
-        </Button>
-      </div>
+      <Card variant="outline" className="text-center">
+        <h2 className="text-lg font-medium mb-2">BigiWallet</h2>
+        <p className="text-sm text-neutral-400 mb-4">Version 1.0.0</p>
+        <button className="text-primary hover:text-primary-light text-sm flex items-center justify-center mx-auto">
+          <RefreshCw size={14} className="mr-1" />
+          Check for updates
+        </button>
+      </Card>
     </div>
   );
 };

@@ -21,6 +21,7 @@ import Tickets from "./pages/admin/Tickets";
 import KYC from "./pages/admin/KYC";
 import Logs from "./pages/admin/Logs";
 import AdminSettings from "./pages/admin/Settings";
+import AdminDashboard from "./pages/admin/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -50,7 +51,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <Routes>
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Users />} />
+              <Route index element={<AdminDashboard />} />
               <Route path="users" element={<Users />} />
               <Route path="tickets" element={<Tickets />} />
               <Route path="kyc" element={<KYC />} />

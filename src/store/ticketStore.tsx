@@ -1,4 +1,6 @@
+// stores/useTicketStore.ts
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { createClient } from "@supabase/supabase-js";
 
 interface Ticket {
@@ -10,6 +12,7 @@ interface Ticket {
   priority: "low" | "medium" | "high" | "urgent";
   created_at: string;
   category_id: string;
+  unread_count: number;
 }
 
 interface TicketMessage {
@@ -39,9 +42,15 @@ interface TicketStore {
   createTicket: (data: Partial<Ticket>) => Promise<void>;
   updateTicket: (id: string, data: Partial<Ticket>) => Promise<void>;
   fetchMessages: (ticketId: string) => Promise<void>;
-  sendMessage: (ticketId: string, message: string) => Promise<void>;
+  sendMessage: (
+    ticketId: string,
+    message: string,
+    isAdmin?: boolean
+  ) => Promise<void>;
   selectTicket: (ticket: Ticket | null) => void;
   resetTicket: () => void;
+  addUnreadCount: (ticket_id: string) => void;
+  resetUnreadCount: (ticket_id: string) => void;
 }
 
 const supabase = createClient(
@@ -54,134 +63,187 @@ const supabase = createClient(
   }
 );
 
-export const useTicketStore = create<TicketStore>((set) => ({
-  tickets: [],
-  categories: [],
-  selectedTicket: null,
-  messages: [],
-  loading: false,
-  error: null,
-
-  fetchTickets: async () => {
-    set({ loading: true, error: null });
-    try {
-      const { data, error } = await supabase
-        .from("tickets")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      set({ tickets: data });
-    } catch (error) {
-      set({ error: (error as Error).message });
-    } finally {
-      set({ loading: false });
-    }
-  },
-
-  fetchCategories: async () => {
-    try {
-      const { data, error } = await supabase
-        .from("ticket_categories")
-        .select("*");
-
-      if (error) throw error;
-      set({ categories: data });
-    } catch (error) {
-      set({ error: (error as Error).message });
-    }
-  },
-
-  createTicket: async (ticketData) => {
-    set({ loading: true, error: null });
-    try {
-      const { data, error } = await supabase
-        .from("tickets")
-        .insert([ticketData])
-        .select()
-        .single();
-
-      if (error) throw error;
-      set((state) => ({ tickets: [data, ...state.tickets] }));
-    } catch (error) {
-      set({ error: (error as Error).message });
-    } finally {
-      set({ loading: false });
-    }
-  },
-
-  updateTicket: async (id, ticketData) => {
-    set({ loading: true, error: null });
-    try {
-      const { data, error } = await supabase
-        .from("tickets")
-        .update(ticketData)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      set((state) => ({
-        tickets: state.tickets.map((ticket) =>
-          ticket.id === id ? { ...ticket, ...data } : ticket
-        ),
-      }));
-    } catch (error) {
-      set({ error: (error as Error).message });
-    } finally {
-      set({ loading: false });
-    }
-  },
-
-  fetchMessages: async (ticketId) => {
-    set({ loading: true, error: null });
-    try {
-      const { data, error } = await supabase
-        .from("ticket_messages")
-        .select("*")
-        .eq("ticket_id", ticketId)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      set({ messages: data });
-    } catch (error) {
-      set({ error: (error as Error).message });
-    } finally {
-      set({ loading: false });
-    }
-  },
-
-  sendMessage: async (ticketId, message) => {
-    set({ loading: true, error: null });
-    try {
-      const { data, error } = await supabase
-        .from("ticket_messages")
-        .insert([
-          {
-            ticket_id: ticketId,
-            message,
-            sender_id: (await supabase.auth.getUser()).data.user?.id,
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
-      set((state) => ({ messages: [...state.messages, data] }));
-    } catch (error) {
-      set({ error: (error as Error).message });
-    } finally {
-      set({ loading: false });
-    }
-  },
-
-  selectTicket: (ticket) => {
-    set({ selectedTicket: ticket });
-  },
-  resetTicket: () => {
-    set({
+export const useTicketStore = create<TicketStore>()(
+  persist(
+    (set, get) => ({
       tickets: [],
+      categories: [],
       selectedTicket: null,
-    });
-  },
-}));
+      messages: [],
+      loading: false,
+      error: null,
+
+      fetchTickets: async () => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from("tickets")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+          if (error) throw error;
+          set({ tickets: data });
+        } catch (error) {
+          set({ error: (error as Error).message });
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      fetchCategories: async () => {
+        try {
+          const { data, error } = await supabase
+            .from("ticket_categories")
+            .select("*");
+
+          if (error) throw error;
+          set({ categories: data });
+        } catch (error) {
+          set({ error: (error as Error).message });
+        }
+      },
+
+      createTicket: async (ticketData) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from("tickets")
+            .insert([ticketData])
+            .select()
+            .single();
+
+          if (error) throw error;
+          set((state) => ({ tickets: [data, ...state.tickets] }));
+        } catch (error) {
+          set({ error: (error as Error).message });
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      updateTicket: async (id, ticketData) => {
+        set({ loading: true, error: null });
+        try {
+          const { error } = await supabase
+            .from("tickets")
+            .update(ticketData)
+            .eq("id", id)
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          set((state) => ({
+            tickets: state.tickets.map((ticket) =>
+              ticket.id === id ? { ...ticket, ...ticketData } : ticket
+            ),
+          }));
+        } catch (error) {
+          set({ error: (error as Error).message });
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      fetchMessages: async (ticketId) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from("ticket_messages")
+            .select("*")
+            .eq("ticket_id", ticketId)
+            .order("created_at", { ascending: true });
+
+          if (error) throw error;
+          set({ messages: data });
+        } catch (error) {
+          set({ error: (error as Error).message });
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      sendMessage: async (ticketId, message, isAdmin) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from("ticket_messages")
+            .insert([
+              {
+                ticket_id: ticketId,
+                message,
+                sender_id: (await supabase.auth.getUser()).data.user?.id,
+                is_admin: isAdmin ?? false,
+              },
+            ])
+            .select()
+            .single();
+
+          if (error) throw error;
+          set((state) => ({ messages: [...state.messages, data] }));
+        } catch (error) {
+          set({ error: (error as Error).message });
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      selectTicket: (ticket) => {
+        set({ selectedTicket: ticket });
+      },
+
+      resetTicket: () => {
+        set({
+          tickets: [],
+          selectedTicket: null,
+        });
+      },
+      addUnreadCount: async (ticket_id) => {
+        const ticket = get().tickets;
+        const newTicket = ticket.map((ticket) => {
+          if (ticket.id === ticket_id) {
+            return {
+              ...ticket,
+              unread_count: (ticket.unread_count || 0) + 1,
+            };
+          }
+          return ticket;
+        });
+
+        set({ tickets: newTicket });
+        await supabase
+          .from("tickets")
+          .update({
+            unread_count:
+              newTicket.find((t) => t.id === ticket_id)?.unread_count || 1,
+          })
+          .eq("id", ticket_id);
+      },
+      resetUnreadCount: async (ticket_id) => {
+        const ticket = get().tickets;
+        const newTicket = ticket.map((ticket) => {
+          if (ticket.id === ticket_id) {
+            return { ...ticket, unread_count: 0 };
+          }
+          return ticket;
+        });
+
+        set({ tickets: newTicket });
+
+        await supabase
+          .from("tickets")
+          .update({ unread_count: 0 })
+          .eq("id", ticket_id);
+      },
+    }),
+    {
+      name: "ticket-store", // key in localStorage
+      partialize: (state) => ({
+        // persist only necessary state
+        tickets: state.tickets,
+        categories: state.categories,
+        selectedTicket: state.selectedTicket,
+      }),
+    }
+  )
+);

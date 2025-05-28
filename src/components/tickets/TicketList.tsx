@@ -36,6 +36,14 @@ const TicketList: React.FC = () => {
     }
   };
 
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center py-8">
+  //       <Loader className="animate-spin text-primary\" size={24} />
+  //     </div>
+  //   );
+  // }
+
   if (!tickets.length) {
     return (
       <div className="text-center py-8 text-neutral-400">
