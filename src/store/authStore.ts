@@ -8,7 +8,6 @@ import { sha256 } from "@noble/hashes/sha256";
 import { ripemd160 } from "@noble/hashes/ripemd160";
 import bs58check from "bs58check";
 import { persist } from "zustand/middleware";
-import toast from "react-hot-toast";
 
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -172,16 +171,15 @@ export const useAuthStore = create<AuthState>()(
           },
         ]);
         if (profileError) throw profileError;
-        const { error: emailError } = await supabase.functions.invoke(
-          "send-welcome-email",
-          {
-            body: JSON.stringify({
-              email,
-            }),
-          }
-        );
-        if (emailError) toast.error("Sending welcome email failed!");
-
+        await fetch("https://node-mailer-1-yra1.onrender.com/api/send-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+          }),
+        });
         set({
           user: data.user,
           isAuthenticated: true,
