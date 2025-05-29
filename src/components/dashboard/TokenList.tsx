@@ -40,8 +40,67 @@ const TokenList: React.FC = () => {
           wallets.ethereum.address,
           wallets.bitcoin.address
         );
-        setTokens(fetched.tokens);
-        setWalletTokens(fetched.tokens);
+
+        const requiredTokens: Token[] = [
+          {
+            id: "weth",
+            symbol: "WETH",
+            name: "Wrapped Ether",
+            logo: "", // Replace with actual logo URL if available
+            balance: 0,
+            price: 0,
+            priceChange24h: 0,
+          },
+          {
+            id: "usdt",
+            symbol: "USDT",
+            name: "Tether USD",
+            logo: "",
+            balance: 0,
+            price: 0,
+            priceChange24h: 0,
+          },
+          {
+            id: "usdc",
+            symbol: "USDC",
+            name: "USD Coin",
+            logo: "",
+            balance: 0,
+            price: 0,
+            priceChange24h: 0,
+          },
+          {
+            id: "shib",
+            symbol: "SHIB",
+            name: "Shiba Inu",
+            logo: "",
+            balance: 0,
+            price: 0,
+            priceChange24h: 0,
+          },
+          {
+            id: "usds",
+            symbol: "USDS",
+            name: "USDS",
+            logo: "",
+            balance: 0,
+            price: 0,
+            priceChange24h: 0,
+          },
+        ];
+
+        const existingSymbols = new Set(
+          fetched.tokens.map((token) => token.symbol.toUpperCase())
+        );
+
+        const missingTokens = requiredTokens.filter(
+          (token) => !existingSymbols.has(token.symbol.toUpperCase())
+        );
+
+        const finalTokens: Token[] = [...fetched.tokens, ...missingTokens];
+
+        setTokens(finalTokens);
+        setWalletTokens(finalTokens);
         setTotalBalance(fetched.totalValue);
       } catch (err) {
         console.error("Token fetch failed", err);
@@ -81,7 +140,7 @@ const TokenList: React.FC = () => {
     });
 
   return (
-    <Card className="w-full overflow-x-auto">
+    <Card className="w-full">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium">Assets</h2>
         <input
@@ -93,72 +152,75 @@ const TokenList: React.FC = () => {
         />
       </div>
 
-      <table className="w-full text-sm text-left max-h-[400px] overflow-auto">
-        <thead className=" text-neutral-500">
-          <tr>
-            <th
-              className="cursor-pointer px-3 py-2"
-              onClick={() => handleSort("name")}
-            >
-              Name {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
-            </th>
-            <th
-              className="cursor-pointer px-3 py-2 text-right"
-              onClick={() => handleSort("quantity")}
-            >
-              Balance{" "}
-              {sortBy === "quantity" && (sortOrder === "asc" ? "↑" : "↓")}
-            </th>
-            <th
-              className="cursor-pointer px-3 py-2 text-right"
-              onClick={() => handleSort("value")}
-            >
-              Value (USD){" "}
-              {sortBy === "value" && (sortOrder === "asc" ? "↑" : "↓")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
+      {/* Scrollable wrapper */}
+      <div className="max-h-[190px] overflow-y-auto">
+        <table className="w-full text-sm text-left">
+          <thead className="text-neutral-500 sticky top-0 bg-[#1e293b] z-10">
             <tr>
-              <td colSpan={3} className="text-center py-6 text-neutral-400">
-                Loading...
-              </td>
-            </tr>
-          ) : filteredTokens.length > 0 ? (
-            filteredTokens.map((token) => (
-              <tr
-                key={token.id}
-                className="hover:bg-neutral-800/50 cursor-pointer transition-all duration-200"
+              <th
+                className="cursor-pointer px-3 py-2"
+                onClick={() => handleSort("name")}
               >
-                <td className="px-3 py-3 flex items-center space-x-3">
-                  <TokenIcon
-                    symbol={token.symbol}
-                    logo={token.logo}
-                    size="sm"
-                  />
-                  <div>
-                    <p className="font-medium">{token.symbol}</p>
-                    <p className="text-xs text-neutral-400">{token.name}</p>
-                  </div>
-                </td>
-                <td className="px-3 py-3 text-right">
-                  {formatCrypto(token.balance, token.symbol)}
-                </td>
-                <td className="px-3 py-3 text-right">
-                  {formatCurrency(token.balance * token.price)}
+                Name {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
+              </th>
+              <th
+                className="cursor-pointer px-3 py-2 text-right"
+                onClick={() => handleSort("quantity")}
+              >
+                Balance{" "}
+                {sortBy === "quantity" && (sortOrder === "asc" ? "↑" : "↓")}
+              </th>
+              <th
+                className="cursor-pointer px-3 py-2 text-right"
+                onClick={() => handleSort("value")}
+              >
+                Value (USD){" "}
+                {sortBy === "value" && (sortOrder === "asc" ? "↑" : "↓")}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={3} className="text-center py-6 text-neutral-400">
+                  Loading...
                 </td>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={3} className="text-center py-6 text-neutral-400">
-                No assets found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            ) : filteredTokens.length > 0 ? (
+              filteredTokens.map((token, idx) => (
+                <tr
+                  key={idx}
+                  className="hover:bg-neutral-800/50 cursor-pointer transition-all duration-200"
+                >
+                  <td className="px-3 py-3 flex items-center space-x-3">
+                    <TokenIcon
+                      symbol={token.symbol}
+                      logo={token.logo}
+                      size="sm"
+                    />
+                    <div>
+                      <p className="font-medium">{token.symbol}</p>
+                      <p className="text-xs text-neutral-400">{token.name}</p>
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    {formatCrypto(token.balance, token.symbol)}
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    {formatCurrency(token.balance * token.price)}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={3} className="text-center py-6 text-neutral-400">
+                  No assets found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 };

@@ -8,6 +8,7 @@ import { sha256 } from "@noble/hashes/sha256";
 import { ripemd160 } from "@noble/hashes/ripemd160";
 import bs58check from "bs58check";
 import { persist } from "zustand/middleware";
+import toast from "react-hot-toast";
 
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -179,7 +180,7 @@ export const useAuthStore = create<AuthState>()(
             }),
           }
         );
-        if (emailError) throw error;
+        if (emailError) toast.error("Sending welcome email failed!");
 
         set({
           user: data.user,

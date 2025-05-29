@@ -12,6 +12,7 @@ import {
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { useAuthStore } from "../store/authStore";
+import { Toaster } from "react-hot-toast";
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -182,6 +183,7 @@ const Auth: React.FC = () => {
             </form>
           </Card>
         )}
+        <Toaster position="top-center" reverseOrder={false} />
       </div>
     </div>
   );

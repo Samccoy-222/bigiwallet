@@ -53,7 +53,7 @@ const RecentTransactions: React.FC = () => {
   };
 
   return (
-    <Card className="w-full animate-slide-up">
+    <Card className="w-full animate-slide-up min-h-[285px]">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium">Recent Transactions</h2>
         <button
@@ -65,7 +65,8 @@ const RecentTransactions: React.FC = () => {
       </div>
 
       {transactions.length > 0 ? (
-        <div className="space-y-3">
+        // Scrollable container with max height
+        <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
           {transactions.map((tx) => {
             const isReceive = tx.transactionSubtype === "incoming";
             const token = tx.chain === "ethereum-mainnet" ? "ETH" : "BTC";

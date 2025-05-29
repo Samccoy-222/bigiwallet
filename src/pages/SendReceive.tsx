@@ -38,6 +38,31 @@ const SendReceive: React.FC = () => {
       symbol: "ETH",
       address: wallets?.ethereum.address,
     },
+    {
+      name: "Wrapped Ether",
+      symbol: "WETH",
+      address: wallets?.ethereum.address,
+    },
+    {
+      name: "Tether USD",
+      symbol: "USDT",
+      address: wallets?.ethereum.address,
+    },
+    {
+      name: "USD Coin",
+      symbol: "USDC",
+      address: wallets?.ethereum.address,
+    },
+    {
+      name: "Shiba Inu",
+      symbol: "SHIB",
+      address: wallets?.ethereum.address,
+    },
+    {
+      name: "USDS",
+      symbol: "USDS",
+      address: wallets?.ethereum.address,
+    },
   ];
   const currentToken = receiveAddress
     ? receiveData.find((t) => t.address === receiveAddress)
@@ -316,11 +341,18 @@ const SendReceive: React.FC = () => {
               </label>
               <select
                 className="input w-full"
-                value={receiveAddress || ""}
-                onChange={(e) => setReceiveAddress(e.target.value)}
+                onChange={(e) => {
+                  const selectedSymbol = e.target.value;
+                  const selectedNetwork = receiveData.find(
+                    (network) => network.symbol === selectedSymbol
+                  );
+                  if (selectedNetwork) {
+                    setReceiveAddress(selectedNetwork.address || "");
+                  }
+                }}
               >
                 {receiveData.map((network) => (
-                  <option key={network.name} value={network.address}>
+                  <option key={network.symbol} value={network.symbol}>
                     {network.name} ({network.symbol})
                   </option>
                 ))}
